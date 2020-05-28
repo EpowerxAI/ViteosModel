@@ -36,8 +36,11 @@ class ViteosMongoDB:
                  param_SSH_HOST = None, param_SSH_PORT = None,
                  param_SSH_USERNAME = None, param_SSH_PASSWORD = None,
                  param_MONGO_HOST = None, param_MONGO_PORT = None,
-                 param_MONGO_USERNAME = None, param_MONGO_PASSWORD = None,
-                 param_MONGO_DB = None, param_MONGO_COLLECTION = None):
+                 param_MONGO_USERNAME = None, param_MONGO_PASSWORD = None
+#		 ,
+#                 param_MONGO_DB = None, 
+#		 param_MONGO_COLLECTION = None
+		 ):
         
         self.without_ssh = param_without_ssh
         
@@ -81,9 +84,9 @@ class ViteosMongoDB:
         else:
             self.MONGO_PASSWORD = param_MONGO_PASSWORD
     
-        # Note: We will get the MONGO_DB and MONGO_COLLECTION later in the code from functions self.DB_to_use() and self.Collection_to_use()
-        self.MONGO_DB = param_MONGO_DB
-        self.MONGO_COLLECTION = param_MONGO_COLLECTION
+#        # Note: We will get the MONGO_DB and MONGO_COLLECTION later in the code from functions self.DB_to_use() and self.Collection_to_use()
+#        self.MONGO_DB = param_MONGO_DB
+#        self.MONGO_COLLECTION = param_MONGO_COLLECTION
         
     def connect_without_ssh(self):
         
@@ -148,47 +151,58 @@ class ViteosMongoDB:
             self.connect_with_ssh()
             self.client = self.client_with_ssh
         
-    def DB_to_use(self):
-        if self.MONGO_DB is None:
-            self.MONGO_DB = input("\nEnter the DB you wish to use : ") 
-            if self.MONGO_DB == '':
-                LOGGER.error('\nSince there is no database mentioned in the MONGO_DB parameter or the input, ending the program run')
-                print('\nERROR : Since there is no database mentioned in the MONGO_DB parameter or the input, ending the program run')
-                sys.exit();
-            else:
-                LOGGER.info('\nSwitching to DB = ' + self.MONGO_DB)
-                print('\nSwitching to DB = ' + self.MONGO_DB)
-        else:      
-            LOGGER.info('\nSwitching to DB = ' + self.MONGO_DB)
-            print('\nSwitching to DB = ' + self.MONGO_DB)
-        
-        self.database = self.client[self.MONGO_DB]
+#    def DB_to_use(self):
+#        if self.MONGO_DB is None:
+#            self.MONGO_DB = input("\nEnter the DB you wish to use : ") 
+#            if self.MONGO_DB == '':
+#                LOGGER.error('\nSince there is no database mentioned in the MONGO_DB parameter or the input, ending the program run')
+#                print('\nERROR : Since there is no database mentioned in the MONGO_DB parameter or the input, ending the program run')
+#                sys.exit();
+#            else:
+#                LOGGER.info('\nSwitching to DB = ' + self.MONGO_DB)
+#                print('\nSwitching to DB = ' + self.MONGO_DB)
+#        else:      
+#            LOGGER.info('\nSwitching to DB = ' + self.MONGO_DB)
+#            print('\nSwitching to DB = ' + self.MONGO_DB)
+#        
+#        self.database = self.client[self.MONGO_DB]
+#    
+#    def collection_to_use(self):
+#        if self.MONGO_COLLECTION is None:
+#            self.MONGO_COLLECTION = input("\nEnter the Collection you wish to use : ") 
+#            if self.MONGO_COLLECTION == '':
+#                LOGGER.error('\nSince there is no Collection mentioned in the MONGO_COLLECTION parameter or the input, ending the program run')
+#                print('\nERROR : Since there is no Collection mentioned in the MONGO_COLLECTION parameter or the input, ending the program run')
+#                sys.exit();
+#            else:
+#                LOGGER.info('\nSwitching to Collection = ' + self.MONGO_COLLECTION)
+#                print('\nSwitching to Collection = ' + self.MONGO_COLLECTION)
+#        else:      
+#            LOGGER.info('\nSwitching to Collection = ' + self.MONGO_COLLECTION)
+#            print('\nSwitching to Collection = ' + self.MONGO_COLLECTION)
+#        
+#	self.collection = self.database[self.MONGO_COLLECTION]
+#
+#    
+#    def make_connection(self):
+#        
+#        self.DB_to_use()
+#        self.collection_to_use()
     
-    def collection_to_use(self):
-        if self.MONGO_COLLECTION is None:
-            self.MONGO_COLLECTION = input("\nEnter the Collection you wish to use : ") 
-            if self.MONGO_COLLECTION == '':
-                LOGGER.error('\nSince there is no Collection mentioned in the MONGO_COLLECTION parameter or the input, ending the program run')
-                print('\nERROR : Since there is no Collection mentioned in the MONGO_COLLECTION parameter or the input, ending the program run')
-                sys.exit();
-            else:
-                LOGGER.info('\nSwitching to Collection = ' + self.MONGO_COLLECTION)
-                print('\nSwitching to Collection = ' + self.MONGO_COLLECTION)
-        else:      
-            LOGGER.info('\nSwitching to Collection = ' + self.MONGO_COLLECTION)
-            print('\nSwitching to Collection = ' + self.MONGO_COLLECTION)
-        self.collection = self.database[self.MONGO_COLLECTION]
-
-    
-    def make_connection(self):
-        
-        self.connect_with_or_without_ssh()
-        self.DB_to_use()
-        self.collection_to_use()
-    
-    def get_data_for_TaskID(self,param_TaskID):
+    def get_data_for_TaskID(self, param_collection, param_TaskID = None):
         try:
-            cursor = self.collection.find( {"TaskInstanceID": param_TaskID, "ViewData":{"$ne":None}, "MatchStatus":{"$ne":21}, "ViewData.CombinedAndIsPaired" : False}, {'ViewData' : 1.0})
+	    collection = param_collection
+            cursor = collection.find( 
+						{
+						"TaskInstanceID": param_TaskID, 
+						"ViewData":{"$ne":None},
+						"ViewData.Status": { $nin: ['HST', 'OC', 'CT'] }, 
+						"MatchStatus":{"$ne":21}, 
+						"ViewData.CombinedAndIsPaired" : False
+						},
+						rd_cl.all_columns_query()
+					 )
+
             self.df_cursor = pd.DataFrame(list(cursor))
             print ('\n Cash data - {} rows,cols loaded from mongodb\n'.format(self.df_cursor.shape))
 
@@ -196,9 +210,58 @@ class ViteosMongoDB:
             print( str(e))
         
         if self.df_cursor.shape[0] == 0:
-            raise ValueError('empty dataframe - no data to make predictions on!')
+            raise ValueError('empty dataframe - no data to make predictions on! for ' + param_TaskID)
 
-        self.df = self.df_cursor['ViewData'].apply(pd.Series)
+    def get_data_for_collection(self, param_collection)
+	try:
+	    collection = param_collection
+            cursor = collection.find( 
+						{
+						"ViewData":{"$ne":None},
+						"ViewData.Status": { $nin: ['HST', 'OC', 'CT'] }, 
+						"MatchStatus":{"$ne":21}, 
+						"ViewData.CombinedAndIsPaired" : False
+						},
+						rd_cl.all_columns_query()
+					 )
+
+            df_cursor = pd.DataFrame(list(cursor))
+            print ('\n Cash data - {} rows,cols loaded from mongodb\n'.format(df_cursor.shape))
+
+        except Exception as e:
+            print( str(e))
+        
+        if df_cursor.shape[0] == 0:
+            raise ValueError('empty dataframe - no data to make predictions on for collection ' + param_collection)
+	
+	df_to_return = df_cursor['ViewData'].apply(pd.Series)
+	return df_to_return
+
+    def df_to_evaluate(self, param_setup_prefix = 'HST_RecData_'):
+	clients_list = list(rd_cl.client_info.keys())
+	df = pd.DataFrame()
+	for client in clients_list:
+		database_for_client = rd_cl.client_info.get(client, {}).get('DB')
+		setups_list = list(rd_cl.client_info.get(client, {}).get('Setups').keys())
+		setups_to_evaluate_list_temp = []
+		
+		for setup in setups_list:
+			if rd_cl.client_info.get(client, {}).get('Setups', {}).get(setup) == 1 :
+				
+				setups_to_evaluate_list_temp.append(setup)
+				db_to_use = self.client[database_for_client]
+				
+				collection_to_use_name = param_setup_prefix + setup
+				collection_to_use = db_to_use[collection_to_use_name]
+				df = df.append(self.get_data_for_collection(param_collection = collection_to_use))	
+				
+					 		
+	setups_to_evaluate_list_temp = [param_setup_prefix + element for element in setups_to_evaluate_list_temp]
+	self.setups_to_evaluate_list = setups_to_evaluate_list_temp
+   
+    def make_df(self):
+	
+	self.df = self.df_cursor['ViewData'].apply(pd.Series)
 
     
     
@@ -208,7 +271,8 @@ class ViteosMongoDB:
     
 if __name__ == '__main__':
     test_client = ViteosMongoDB(param_without_ssh = False,param_MONGO_DB = 'ML_ReconDB', param_MONGO_COLLECTION = 'HST_RecData_123')
-    test_client.make_connection()
+    test_client.connect_with_or_without_ssh()
+#    test_client.make_connection()
     test_client.get_data_for_TaskID(param_TaskID = 123726192)
         
                                      
