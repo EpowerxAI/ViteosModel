@@ -55,21 +55,10 @@ class Read_Class:
 		return list_all_startwith_string
 
 	def all_columns_query(self):
-		self.all_columns_startwith_ViewData = self.list_check_and_add_str(param_check_string = 'ViewData.', param_check_and_add_list = self.columns_list) + self.list_check_and_add_str(param_check_string = 'ViewData.', param_check_and_add_list = self.add_columns_list)
-		
-		ViewData_str = 'ViewData.'		
-		
-		self.columns_list_startwith_ViewData = [i for i in self.columns_list if i.startswith('ViewData.')]
-		self.columns_list_not_startwith_ViewData = [i for i in self.columns_list if i not in self.columns_list_startwith_ViewData]
-		
-		self.columns_list_all_startwith_ViewData = [ViewData_str + i for i in self.columns_list_not_startwith_ViewData]
-		self.columns_list_all_startwith_ViewData = self.columns_list_startwith_ViewData + self.columns_list_all_startwith_ViewData
-		
-		self.add_columns_list_startwith_ViewData = [i for i in self.add_columns_list if i.startswith('ViewData.')]
-		self.add_columns_list_not_startwith_ViewData = [i for i in self.add_columns_list if i not in self.add_columns_list_startwith_ViewData]
-		
-		self.
-		
+		self.all_columns_startwith_ViewData_list = self.list_check_and_add_str(param_check_string = 'ViewData.', param_check_and_add_list = self.columns_list) + self.list_check_and_add_str(param_check_string = 'ViewData.', param_check_and_add_list = self.add_columns_list)
+		self.all_columns_startwith_ViewData_dict = {i : 1 for i in self.all_columns_startwith_ViewData_list}
+		return self.all_columns_startwith_ViewData_dict
+
 	def ssh_host(self):
 		return self.default_ssh_from_json['DEFAULT_SSH_HOST']
 
