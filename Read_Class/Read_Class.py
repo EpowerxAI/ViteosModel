@@ -27,7 +27,7 @@ class Read_Class:
 			self.default_mongo_from_json = json.load(infile)
 		
 				
-		self.all_columns_list = json.load(self.columns_from_json) + json.load(self.add_columns_from_json
+		self.all_columns_list = self.columns_list + self.add_columns_list
 
 	def columns_list(self):
 		return self.columns_list
@@ -47,7 +47,28 @@ class Read_Class:
 	def all_columns_json(self):
 		return self.columns_from_json + self.add_columns_from_json
 
+	def list_check_and_add_str(self, param_check_string, param_check_and_add_list):
+		list_startwith_string = [i for i in param_check_and_add_list if i.startswith(param_check_string)]
+		list_not_startwith_string = [i for i in param_check_and_add_list if i not in list_startwith_string]
+		list_all_startwith_string = [param_check_string + i for in list_not_startwith_string]
+		list_all_startwith_string = list_startwith_string + list_all_startwith_string
+		return list_all_startwith_string
+
 	def all_columns_query(self):
+		self.all_columns_startwith_ViewData = self.list_check_and_add_str(param_check_string = 'ViewData.', param_check_and_add_list = self.columns_list) + self.list_check_and_add_str(param_check_string = 'ViewData.', param_check_and_add_list = self.add_columns_list)
+		
+		ViewData_str = 'ViewData.'		
+		
+		self.columns_list_startwith_ViewData = [i for i in self.columns_list if i.startswith('ViewData.')]
+		self.columns_list_not_startwith_ViewData = [i for i in self.columns_list if i not in self.columns_list_startwith_ViewData]
+		
+		self.columns_list_all_startwith_ViewData = [ViewData_str + i for i in self.columns_list_not_startwith_ViewData]
+		self.columns_list_all_startwith_ViewData = self.columns_list_startwith_ViewData + self.columns_list_all_startwith_ViewData
+		
+		self.add_columns_list_startwith_ViewData = [i for i in self.add_columns_list if i.startswith('ViewData.')]
+		self.add_columns_list_not_startwith_ViewData = [i for i in self.add_columns_list if i not in self.add_columns_list_startwith_ViewData]
+		
+		self.
 		
 	def ssh_host(self):
 		return self.default_ssh_from_json['DEFAULT_SSH_HOST']
