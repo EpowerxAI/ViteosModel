@@ -1,0 +1,819 @@
+Proxy Username for Squid proxy-caching web server: Proxy Username for Squid proxy-caching web server: Proxy Username for Squid proxy-caching web server:  
+How to properly ship and deploy your machine learning model
+
+A practical guide with FastAPI, Docker and GitHub Actions
+
+
+As a data scientist, training your machine learning model is only a part of
+providing a solution for the client. Besides generating and cleaning the data,
+selecting and tuning the algorithms, you also need to deliver and deploy your
+results so that it is usable in production. This is a large field in itself
+with constantly evolving tools and standards. In this post, my goal is to
+present a practical guide on how to do this using the currently available state
+of the art tools and best practices. We are going to build a system which can
+serve as a starting point for your deployment tasks, regardless of the actual
+machine learning problem itself! Instead of a minimal app barely scratching the
+surface of the used tools, I aim to introduce best practices and demonstrate
+advanced features, so that you don’t have to learn the hard way. Learning from
+your own mistakes is nice, but thinking ahead and not committing those mistakes
+is much better.
+
+To create our deployment-ready application, we will use two tools as our main
+building blocks: Docker and FastAPI. Docker, which probably needs no
+introduction, is a containerization tool allowing you to easily package and run
+your application in any environment. It works especially well with FastAPI,
+which have gained incredible popularity in the last few months. It makes
+building a web framework around your model and tailoring to your customer’s
+needs easy.
+
+Our toy problem will be a simple regression, where we will predict real estate
+prices based on 13 features such as crime rate, property tax rate, etc. For
+this, we will use the Boston house prices dataset as our training data.
+Regarding the model choice, we will use a random forest regressor from the
+awesome scikit-learn package. Of course, you are not restricted to
+scikit-learn, you can use TensorFlow, PyTorch, or whatever you may like. I
+choose this for simplicity, since it requires almost no extra work like
+extensive data preprocessing and its dependencies are relatively lightweight
+and easy to install.
+
+In this post, I would like to demonstrate how to
+
+  • package your model and build an API to communicate with it,
+  • design a convenient and simple user interface,
+  • set up a proper development environment with virtualenv,
+  • use FastAPI,
+  • prepare for future code changes by wrapping your machine learning model,
+  • use dependency injection to make testing easier,
+  • validate user input,
+  • test the API properly with mocks,
+  • package it up with Docker and Docker compose,
+  • and finally how to use GitHub Actions to automate testing.
+
+To follow this guide, you don’t have to have experience with Docker or FastAPI
+at all! Some familiarity with scikit-learn and NumPy will be beneficial, but we
+won’t focus on these parts very intensively. The application which we are going
+to build can be found in its entirety at https://github.com/cosmic-cortex/
+fastAPI-ML-quickstart, ready to use. Before we jump straight into the
+development, let’s assess the requirements and design the architecture of the
+application!
+
+How to design a small machine learning app
+
+One of the main considerations during deployment is the need of the customer.
+In our case, let’s assume that they don’t need to understand how the algorithm
+works and don’t want to retrain the algorithm. They just want to send the data
+and get back the answer right away.
+
+[1]
+[1]
+Communicating with the machine learning model
+
+In technical terms, we are going to build an application which receives data in
+form of HTTP requests and sends back the predictions as HTTP responses. Besides
+its simple interface, it is easy to integrate into a larger application as a
+microservice, which is a huge advantage.
+
+[1]
+[1]
+The application from a high level
+
+Our application will communicate through an API, which will be packaged in a
+Docker container. Within the application itself, we need to do three things in
+this simple case: process the input, make the predictions, process the output
+and return it to the user. With FastAPI, the input will be a JSON, something
+like this:
+
+{
+  "data":[[0.00632,18,2.31,0,0.538,6.575,65.2,4.09,1,296,15.3,396.9,4.98]]
+}
+
+This will be converted by FastAPI internally to an appropriate Python object.
+(More on this later, as this is one of the neatest features in FastAPI.) We
+need to process this for the scikit-learn model, which means converting it to a
+NumPy array. It can be used to calculate our predictions, which we will again
+turn into a format used by FastAPI. In the end, the user will receive a JSON
+similar to the input:
+
+{
+  "data": [25.813999999999993]
+}
+
+Let’s jump into the development right away! Our first job is to set up the
+appropriate development environment.
+
+Setting up the development environment
+
+If you have worked with Python extensively, you have probably used virtual
+environments. If not, the gist is the following. A Python virtual environment
+is an isolated installation of Python, where you can install packages needed
+specifically for the project. When you have many projects with possibly
+conflicting dependencies (like if one requires NumPy ≥ 1.13 and other requires
+NumPy ≤ 1.10), you are better off using a virtual environment to avoid jumbling
+things completely. To create a virtual environment, use
+
+virtualenv /path/to/venv --python=/path/to/python3
+
+where the path to your global Python3 interpreter can be found with
+
+which python3
+
+if you are under Linux. (If you don’t provide the interpreter explicitly, it
+will fall back to the Python interpreter with the alias python, which can be
+Python 2.7 in some cases. Don’t use Python 2.7 :) ) The virtual environment can
+be activated with
+
+source /path/to/venv/bin/activate
+
+and after this, if you install packages with pip, it will only be visible while
+the virtual environment is active. After you have cloned the repository
+containing the application which we will build, you can install the
+dependencies with the
+
+pip install -r requirements.txt
+
+command while in the root folder. Although you don’t need to collect your
+dependencies into a single requirements file, it is strongly advised to do so.
+It makes maintaining your application more easy, moreover you can use the same
+file when packaging the application into a Docker image.
+
+Building the skeleton of the application
+
+Roughly speaking, every FastAPI application consists of a main file responsible
+for launching the application/defining the endpoints and additional modules
+which are used by the endpoints. (The endpoints can be defined elsewhere other
+than the main file, but in the simplest cases this structure is preferable.)
+
+.
+├── api
+│   ├── __init__.py
+│   ├── main.py
+│   └── ml
+│       ├── __init__.py
+│       ├── model.joblib
+│       └── model.py
+└── requirements.txt
+
+Let’s build the skeleton of main.py first and implement the ml module later,
+when the structure of FastAPI apps are clear!
+
+We basically need to import two classes: the FastAPI class which provides all
+functionality for our API and the BaseModel from the awesome Pydantic library,
+which serves as a model for HTTP requests and responses.
+
+-------- main_skeleton.py-----------
+
+from typing import List
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+
+class PredictRequest(BaseModel):
+    data: List[List[float]]
+
+
+class PredictResponse(BaseModel):
+    data: List[float]
+
+
+app = FastAPI()
+
+
+@app.post("/predict", response_model=PredictResponse)
+def predict(input: PredictRequest):
+    return PredictResponse(data=[0.0])
+
+
+
+------------------------------------
+
+After instantiating a FastAPI object, we can register endpoints to it by using
+its appropriate methods to decorate our functions describing the endpoint
+logic. For example, here we have
+
+--------predict_skeleton.py---------
+
+@app.post("/predict", response_model=PredictResponse)
+def predict(input: PredictRequest):
+    return PredictResponse(data=[0.0])
+
+-----------------------------------
+
+which means that our application expects a POSTrequest to the /predict endpoint
+containing a JSON payload with structure described by the PredictRequest
+object, and will return a response with a JSON payload described by
+PredictResponse. These are all specified by the @app.post decorator before the
+function, which will register this function to the FastAPI instance named app
+and routes the requests to the /predict URL to this function. The type
+annotation for the input argument of predict describes the appropriate format
+of the request data.
+
+In this example, a PredictRequest object has a single attribute called data,
+which must be a list of list of floats. (Since data is usually passed in
+batches, each list inside the external list is a data point.) Pydantic takes
+type checks seriously: if the type does not match, it relentlessly throws an
+exception. This type checking with Pydantic is an extremely powerful feature of
+FastAPI, making our life much easier. If the request does not have the proper
+form, you instantly receive a 422 Unprocessable Entity status code as a
+response. And you have to do almost zero work for this! FastAPI and Pydantic
+performs the validations for you if you have specified the schema using the
+request and response models.
+
+You can serve this app right away with
+
+uvicorn api.main:app
+
+and try out the endpoints by checking out the automatic documentation generated
+by FastAPI, which can be found at http://localhost:8000/docs by default.
+Alternatively, you can use curl to post requests, for example
+
+curl -X POST “http://localhost:8000/predict" -H “accept: application/json” -H “Content-Type: application/json” -d “{\”data\”:[[0]]}”
+
+will work. Currently, this simple skeleton will always return a dummy response
+
+{
+  "data": [0]
+}
+
+but this will change soon, once our model is in place. Now that the skeleton is
+up and running, we are ready to implement the machine learning model!
+
+Creating a machine learning algorithm
+
+As I have mentioned, we are going to train a simple random forest regressor
+using the Boston dataset, both can be found in scikit-learn. Although it is
+tempting to work with the scikit-learn objects directly, I prefer to build an
+abstract interface for our models, which will be used by the API endpoints
+instead of the the scikit-learn object itself. The reasoning behind it is the
+interface is reusable throughout your entire codebase, and if you wish to
+replace your underlying model (say use a PyTorch model instead of the random
+forest regressor of scikit-learn), you only need to change the implementation
+of this class instead of changing all the functions and endpoints actually
+using the model.
+
+-----------model_abstract.py------------
+class Model:
+    def train(self, X, y):
+        pass
+
+    def predict(self, X):
+        pass
+
+    def save(self):
+      pass
+
+    def load(self):
+      pass
+
+----------------------------------------
+
+We need four essential methods: one to train the model, one to calculate the
+predictions and two for saving and loading the model. When the interface is
+clear, we can proceed with the concrete implementation, which is very
+straightforward.
+
+-------------model.py------------------
+
+import joblib
+import numpy as np
+from pathlib import Path
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.datasets import load_boston
+
+
+class Model:
+    def __init__(self, model_path: str = None):
+        self._model = None
+        self._model_path = model_path
+        self.load()
+
+    def train(self, X: np.ndarray, y: np.ndarray):
+        self._model = RandomForestRegressor()
+        self._model.fit(X, y)
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return self._model.predict(X)
+
+    def save(self):
+        if self._model is not None:
+            joblib.dump(self._model, self._model_path)
+        else:
+            raise TypeError("The model is not trained yet, use .train() before saving")
+
+    def load(self):
+        try:
+            self._model = joblib.load(self._model_path)
+        except:
+            self._model = None
+        return self
+
+
+model_path = Path(__file__).parent / "model.joblib"
+n_features = load_boston(return_X_y=True)[0].shape[1]
+model = Model(model_path)
+
+
+def get_model():
+    return model
+
+
+if __name__ == "__main__":
+    X, y = load_boston(return_X_y=True)
+    model.train(X, y)
+    model.save()
+
+---------------------------------------
+
+
+In addition to the Model interface itself, we will also define the model object
+in the api.ml.model module. This particular instance will be used throughout
+the application. This is called a singleton, which is one of the most important
+OOP patterns. Although it is safe to use here, singletons must be used with
+caution in larger applications, since they are basically global variables. This
+model object is accessed in the rest of the application by calling the
+get_model() function. The reason for this is twofold. First, this function is
+reusable in the code everywhere, thus if later we decide to add additional
+logic to getting the model (like checks, etc), it is enough to modify the code
+in a single place. Second, which will be explained later, it is better to write
+unit tests for the application if we use dependency injection in the endpoints.
+(Don’t worry if you don’t understand this now, it will be explained later.)
+
+To prepare our application, a model is trained and saved to the disk when this
+script is executed. This will be used later for prediction.
+
+Building the API endpoints I: processing JSON input
+
+After the app skeleton and the machine learning algorithm is in place, we are
+ready to implement the logic behind the endpoints. Let’s switch back to the
+main.py module! The prediction is a relatively straightforward process, which
+can be implemented using only a few lines of code.
+
+---------predict_final.py------------
+
+import numpy as np
+from fastapi import Depends
+
+from .ml.model import get_model
+
+
+@app.post("/predict", response_model=PredictResponse)
+def predict(input: PredictRequest, model: Model = Depends(get_model)):
+    X = np.array(input.data)
+    y_pred = model.predict(X)
+    result = PredictResponse(data=y_pred.tolist())
+
+    return result
+
+-------------------------------------
+
+In the function body, there are three things going on:
+
+ 1. The input (which is an instance of PredictRequest) is converted to a NumPy
+    array.
+ 2. Predictions are calculated, resulting in a NumPy array.
+ 3. Results are converted to a PredictResponse object and returned.
+
+The return value is converted to a proper response by FastAPI. There is one
+important change which probably already got your attention: we pass an
+additional parameter to our predict function:
+
+model: Model = Depends(get_model)
+
+where the get_model function is the one which returns the model, defined in the
+api.ml.model module. This technique is called dependency injection. Although
+model is a parameter of the function, each time the predict function is called,
+get_model is executed and the return value is passed. It might not be apparent
+why exactly this is useful, but this is very important to write proper unit
+tests. Think about it: our endpoint depends on a scikit-learn object, which has
+thousands of lines of code behind it. It can break in new releases of the
+package for example. (As it happened with pip very recently: https://github.com
+/pypa/pip/issues/7217, affecting a significant portion of users.) In general,
+however important they are, external dependencies carry potential errors. When
+we want to unit test our application, we don’t want the results to depend on
+the correctness of some object which might be outside of our control. Thus,
+these are usually mocked during unit tests. A mock is a fake object,
+implementing the same interface as the original, having 100% predictable
+behavior. With dependency injection, these mocks can be easily injected into
+the code by overriding the dependencies. Don’t worry if you don’t get this
+right away, it will be explained in more detail in the testing section.
+
+Never trust the user input
+
+Now that the endpoint itself is implemented, let’s consider some possible use
+cases. If you try
+
+curl -X POST “http://localhost:8000/predict" -H “accept: application/json” -H “Content-Type: application/json” -d “{\”data\”:[[0]]}”
+
+using the current implementation, you will get an Internal Server Error and the
+application will crash. This is because since the model was trained using 13
+features, it requires 13 features for prediction. Although uvicorn is smart and
+will restart your application in this case, Internal Server Error is as bad as
+it sounds and you definitely don’t want to experience this in production. To
+fix this issue, we will add additional validation to our Pydantic request
+models. By default, they only check that the JSON payload has a “data” key,
+whose value is a list of list of floats. In our custom validator (which runs in
+addition to the default validation), we check that the dimensionality of the
+data is correct, that is, every sublist contains exactly n_features elements.
+(Which is 13.)
+
+When wrong data is passed and the validation fails, the app won’t crash but
+returns a 422 Unprocessable Entity error code instead. Although this is not
+necessarily a better result for the enduser, it is definitely more pleasant for
+you and your devops team. In general, when you are building applications which
+process data, you should never trust user input. Things can go wrong
+accidentally or by malicious attacks such as SQL injections, which was a
+popular and dangerous tool in a hacker’s toolkit.
+
+The final module will look something like this: https://github.com/
+cosmic-cortex/fastAPI-ML-quickstart/blob/master/api/main.py
+
+The predict_csv endpoint will be added in the next section.
+
+Building the API endpoints II: processing .csv files
+
+If you would like to receive data in another format, such as a csv file, you
+can do that. Instead of using a Pydantic model as input, you should use File
+and UploadFile for that purpose.
+
+Notice that this time, Pydantic is not there to perform validation for us, thus
+we must do it manually. There are two things which needs to be validated.
+
+ 1. The file contains data in a tabular form.
+ 2. The data contains exactly 13 features.
+
+We do both manually inside the function body. When something is wrong, we raise
+an exception, which is returned by FastAPI in a proper HTTP response.
+
+Testing the API
+
+Now that we have everything in place, it is time to test our application!
+Working with untested code is like a Whack-A-Mole game: you fix one bug,
+another one will be introduced right away. Personally, I am a big proponent of
+testing and I think you should be one too. Although testing requires an initial
+time investment, it will pay off exponentially later in development.
+
+To test the API, we will use pytest, which is a standard tool for unit testing
+in Python. We will put the tests module right next to the api, so the file
+structure will look like this:
+
+.
+├── api
+│   ├── __init__.py
+│   ├── main.py
+│   ├── ml
+│   │   ├── __init__.py
+│   │   ├── model.joblib
+│   │   └── model.py
+│   └── tests
+│       ├── api
+│       │   ├── __init__.py
+│       │   └── test_api.py
+│       ├── conftest.py
+│       ├── __init__.py
+│       └── mocks.py
+└── requirements.txt
+
+The first thing which we shall build is a mock Model object, so that our
+endpoint tests doesn’t depend on scikit-learn. As I have mentioned, this would
+be undesirable, since we want to decouple bugs in our code and bugs in external
+code.
+
+This class is relatively straightforward, completely mimics the interface of
+our api.ml.model.Model class, but basically it does not perform any meaningful
+computation and returns random data. (Although the random data will match the
+expected output in shape.)
+
+Next, we will add the test configuration, which is located in the conftest.py
+module, by pytest requirements. In our case, we should do two things.
+
+ 1. Overwrite the dependency injection used in the endpoint to use a MockModel
+    object instead of a real model.
+ 2. Define the fixtures, which are dependency injections themselves, used in
+    tests. (We will see an example soon.)
+
+First, we import the actual app object from our main module. To override the
+dependency to get_model(), we simply provide a new function and set the
+appropriate key in the app.dependency_overrides dictionary with the new
+function. This code won’t execute during deployment, thus our dependencies
+won’t be overridden by accident, it is specific for tests. Next, we prepare a
+Starlette TestClient, which “allows you to make requests against your ASGI
+application”, a very convenient tool for testing. This definition means that
+with a TestClient instance, we can post requests to endpoints and receive the
+responses, which is exactly what we want to test.
+
+First, we test the user input with valid data. To see that it works well with
+multiple batch sizes (from 1 to 9), we add the number of data points as the
+n_instances parameter. Looping through all the possible sizes inside the test
+function is considered bad practice, since if it fails for a particular size,
+you would like to know where it failed exactly. Thus, we can use the
+@pytest.mark.parametrize decorator, which automatically generates a new test
+function for each value of the parameter. Inside the test function, we simply
+generate some fake data and post it to the application using the TestClient. We
+want to check two things: 1) the response code is 200, which is HTTP-speak for
+A-okay 2) the response contains as many predictions as the size of our input
+dataset.
+
+However, testing the endpoint for correct input data is not enough. If so, it
+is even more important to make sure our application behaves properly when
+presented with incorrect data. This is presented below.
+
+For completeness, I have added tests for the predict_csv endpoint, these are
+similar to the previous ones, so I won’t detail them.
+
+Once the tests are ready, you can run them by simply executing pytest in bash
+from the root directory of the project. The output will be along the following
+lines:
+
+[1]
+[1]
+
+After all, the tests module should look like this: https://github.com/
+cosmic-cortex/fastAPI-ML-quickstart/tree/master/api/tests.
+
+Packaging your application
+
+When the application is properly tested and runs correctly in your local
+machine, it is time to package it into a portable format. Without this, setting
+this up on another machine can be a slow and painful process. For this purpose,
+we are going to use Docker.
+
+[1]
+[1]
+Docker architecture. Source: https://docs.docker.com/engine/docker-overview/
+
+Docker packages applications into images, which are self-contained
+applications, even operating systems. They are run by Docker containers, which
+are isolated execution environments. They are very similar in principle to
+virtual machines. Although they don’t offer as strict isolation as VMs, it is a
+good model to think of when you are using Docker for the first time.
+
+A Docker image is defined by the Dockerfile, which is basically a set of
+instructions for Docker on how to build the image. Images are usually not
+standalone, they are built from other base images. These images have their own
+repository at https://hub.docker.com, where you can push your images and pull
+other ones. By an analogy, these images are like git repositories. Using a base
+image is like forking a repository and pushing a few commits to your own fork.
+
+We are going to package our application by using the ubuntu:19.10 image, which
+contains the 19.10 version of Ubuntu. (This is the official Ubuntu docker
+image.) Choosing the base image significantly impacts the much of the later
+workflow. For Python applications, an Alpine Linux based image is also an
+excellent choice, Python even has some of its official images based on Alpine.
+However, installing NumPy and certain machine learning libraries to an Alpine
+based images can be difficult, so we are going to stick with Ubuntu.
+
+Here is our Dockerfile, contained in the root folder of the project. We are
+going to walk through this line by line.
+
+The first line describes the base image, which is ubuntu:19.10 as mentioned.
+Upon building, this image is pulled from the central repository. After it is
+done, Docker is going to copy the ./api folder to the image. (Each image has
+its own filesystem.) Then we are going to install Python3 and the required
+packages such as FastAPI. The command after RUN is executed within the image.
+After this, we set the PYTHONPATH variable and the working directory properly.
+
+To serve our application, we shall expose the port 8000 of the container to the
+host image. This is not done by default for security reasons, you have to do
+this manually. Finally, we tell Docker what to do when the container is run: we
+want to start uvicorn and serve the application. The ENTRYPOINT specifies the
+command which will be run every time the container is executed, while CMD
+specifies its arguments.
+
+The image itself can be built with the
+
+docker build --file Dockerfile --tag fastapi-ml-quickstart .
+
+command. The building can take a while, but after it is done, you can run it
+with
+
+docker run -p 8000:8000 fastapi-ml-quickstart
+
+In the run command, you need to specify for Docker to map the TCP port 8000 of
+the container to the same one in the host machine. If you open up http://
+localhost:8000 in your browser, you can see that the application is running and
+you can connect to it properly.
+
+Combining containers
+
+In this simple case, our application is not reliant on other services such as
+Redis or PostgreSQL. When it is the case, docker-compose can be used to combine
+containers. Similarly to Dockerfile, docker-compose needs a YAML configuration
+file named docker-compose.yaml describing which services to launch.
+
+After this, the service can be launched with simply executing
+
+docker-compose up
+
+from the project root directory. Docker compose will automatically build the
+image when it is not available. I find that even when you have a single
+container, it is much simpler to use this then to call docker build and docker
+run manually every time.
+
+Continuous integration with GitHub Actions
+
+One of the pillars of well maintained code is continuous integration. Even
+though we have tests, nothing actually enforces the programmer to use them
+before committing the changes. We can solve this by executing tests
+automatically upon certain triggers like pushes and pull requests to specific
+branches. This way, pushing changes to the mainline of a shared codebase can be
+done much faster than the usual. Compared to the old school development
+workflow when merging is done say once per week and requires a large portion of
+the team to supervise it, with proper continuous integration setup, code
+delivery can be done by a single person even several times per day.
+
+In this project we are going to use GitHub Actions, which allows you to
+automate actions upon predefined triggers. It requires you to define your
+action scripts inside the .github/workflows subdirectory of the GitHub-hosted
+repository. The following is the YAML config file of this project.
+
+As you can see, the config file has two main parts: the second part defines
+what is going to happen, the first part defines when. In this example, we want
+the script to execute on every push and every pull request to the master
+branch.
+
+The action itself is defined in terms of jobs, for which each step is given.
+This particular job named build runs in an Ubuntu instance, as indicated by the
+runs-on parameter. First it checks out the repository, then it launches Docker
+compose using the docker-compose.test.yaml file, made specifically for testing
+purposes.
+
+This Docker compose is only different in one line compared to the one which we
+used previously: it overrides the entrypoint for the fastapi-ml-quickstart
+container, launching pytest instead of uvicorn. Upon finish, the container
+exits and Docker compose is aborted, returning the exit code from the
+fastapi-ml-quickstart container. These things are not the default behavior of
+docker-compose, so you have to specifically instruct it to do so:
+
+docker-compose -f docker-compose.test.yaml up --abort-on-container-exit --exit-code-from fastapi-ml-quickstart
+
+As a personal note, I am a big fan of GitHub Actions. It is very versatile, you
+can even push updates to production with it, publish in PyPI, and many more
+other tasks. Its obvious drawback is that it is only available for GitHub
+users. There are alternatives however, for instance Jenkins, CircleCI, Travis
+CI, GitLab CI, and many more.
+
+Wrapping up
+
+In this guide, my aim was to build a small application for machine learning
+applications and to package it properly following best practices and using
+modern tools. However, there is always room for improvement! If you have any
+ideas, feel free to open up an issue at https://github.com/cosmic-cortex/
+fastAPI-ML-quickstart! I hope that you have found this guide useful. Now go and
+start building awesome AI apps :)
+
+Towards Data Science
+
+A Medium publication sharing concepts, ideas, and codes.
+
+Follow
+ 
+
+461
+
+ 
+
+  • Machine Learning
+  • Data Science
+  • Python
+  • Programming
+
+ 
+
+461 claps
+
+ 
+ 
+ 
+ 
+Tivadar Danka
+
+Written by
+
+Tivadar Danka
+
+Follow
+
+I use deep learning to show the invisible and discover the unknown. Follow me
+@TivadarDanka to catch my latest thoughts!
+
+Follow
+Towards Data Science
+
+Towards Data Science
+
+Follow
+
+A Medium publication sharing concepts, ideas, and codes.
+
+Follow
+ 
+Tivadar Danka
+
+Written by
+
+Tivadar Danka
+
+Follow
+
+I use deep learning to show the invisible and discover the unknown. Follow me
+@TivadarDanka to catch my latest thoughts!
+
+Towards Data Science
+
+Towards Data Science
+
+Follow
+
+A Medium publication sharing concepts, ideas, and codes.
+
+ 
+See responses (3)
+
+More From Medium
+
+Sorry, Online Courses Won’t Make you a Data Scientist
+
+Ramshankar Yadhunath in Towards Data Science
+ 
+[0]
+[0]
+
+Why Data Science might just not be worth it
+
+Dario Radečić in Towards Data Science
+ 
+[0]
+[0]
+
+Bye-bye Python. Hello Julia!
+
+Rhea Moutafis in Towards Data Science
+ 
+[1]
+[1]
+
+Do Not Use “+” to Join Strings in Python
+
+Christopher Tao in Towards Data Science
+ 
+[1]
+[1]
+
+Don’t Become a Data Scientist
+
+Chris in Towards Data Science
+ 
+[1]
+[1]
+
+One in two Pythonistas should learn Golang now
+
+Rhea Moutafis in Towards Data Science
+ 
+[1]
+[1]
+
+7 ways to catch a Data Scientist’s lies and deception
+
+Aishwarya Prabhat in Towards Data Science
+ 
+[0]
+[0]
+
+Colab Pro: Is it Worth the Money?
+
+Dario Radečić in Towards Data Science
+ 
+[1]
+[1]
+
+Discover Medium
+
+Welcome to a place where words matter. On Medium, smart voices and original
+ideas take center stage - with no ads in sight. Watch
+
+Make Medium yours
+
+Follow all the topics you care about, and we’ll deliver the best stories for
+you to your homepage and inbox. Explore
+
+Become a member
+
+Get unlimited access to the best stories on Medium — and support writers while
+you’re at it. Just $5/month. Upgrade
+ 
+
+About
+
+Help
+
+Legal
+
+Get the Medium app
+
+A button that says 'Download on the App Store', and if clicked it will lead you
+to the iOS App store
+A button that says 'Get it on, Google Play', and if clicked it will lead you to
+the Google Play store
