@@ -9,7 +9,7 @@ import json
 
 class Read_Class:
 	
-	def __init__(self, param_columns_path = '../columns_json.json', param_add_columns_path = '../add_columns_json.json', param_default_ssh_path = '../default_ssh.json', param_default_mongo_path = '../default_mongo.json', param_client_setup_path = '../client_setup_json.json'):
+	def __init__(self, param_columns_path = '../columns_json.json', param_add_columns_path = '../add_columns_json.json', param_default_ssh_path = '../default_ssh.json', param_default_mongo_path = '../default_mongo.json', param_client_info_path = '../client_info_json.json'):
 	
 		with open(param_columns_path) as infile:
 			self.columns_from_json = json.load(infile)
@@ -28,8 +28,8 @@ class Read_Class:
 		self.add_columns_list = json.loads(self.add_columns_from_json)
 		self.all_columns_list = self.columns_list + self.add_columns_list
 
-		with open(param_client_setup_path) as infile:
-			self.client_param_dict = json.load(infile)
+		with open(param_client_info_path) as infile:
+			self.client_info_dict = json.load(infile)
 		
 	def columns_list(self):
 		return self.columns_list
@@ -85,8 +85,8 @@ class Read_Class:
 	def mongo_password(self):
 		return self.default_mongo_from_json('DEFAULT_MONGO_PASSWORD')
 	
-	def client_setup(self):
-		return self.client_param_dict
+	def client_info(self):
+		return self.client_info_dict
 
 if __name__ == '__main__':
 	ReadColsTest_obj = ReadCols_Class(param_columns_path = 'columns_json.json',
