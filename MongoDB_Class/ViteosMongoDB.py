@@ -222,8 +222,9 @@ class ViteosMongoDB:
 						"MatchStatus":{"$ne":21}, 
 						"ViewData.CombinedAndIsPaired" : False
 						},
-						rd_cl.all_columns_query()
-					 )
+				#		rd_cl.all_columns_query()
+						rd_cl.common_columns_query() 
+					)
 
             df_cursor = pd.DataFrame(list(cursor))
             print ('\n Cash data - {} rows,cols loaded from mongodb\n'.format(df_cursor.shape))
