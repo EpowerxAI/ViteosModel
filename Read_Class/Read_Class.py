@@ -9,7 +9,7 @@ import json
 
 class Read_Class:
 	
-	def __init__(self, param_columns_path = '../columns_json.json', param_add_columns_path = '../add_columns_json.json', param_default_ssh_path = '../default_ssh.json', param_default_mongo_path = '../default_mongo.json', param_client_info_path = '../client_info_json.json', param_common_cols_path = '../common_cols_json.json'):
+	def __init__(self, param_columns_path = '../columns_json.json', param_add_columns_path = '../add_columns_json.json', param_default_ssh_path = '../default_ssh.json', param_default_mongo_path = '../default_mongo.json', param_client_info_path = '../weiss_client_info_json.json', param_common_cols_path = '../common_cols_json.json'):
 	
 		with open(param_columns_path) as infile:
 			self.columns_from_json = json.load(infile)
