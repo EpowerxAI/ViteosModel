@@ -9,7 +9,7 @@ import json
 
 class Read_Class:
 	
-	def __init__(self, param_columns_path = '../columns_json.json', param_add_columns_path = '../add_columns_json.json', param_default_ssh_path = '../default_ssh.json', param_default_mongo_path = '../default_mongo.json', param_client_info_path = '../client_info_json.json'):
+	def __init__(self, param_columns_path = '../columns_json.json', param_add_columns_path = '../add_columns_json.json', param_default_ssh_path = '../default_ssh.json', param_default_mongo_path = '../default_mongo.json', param_client_info_path = '../client_info_json.json', param_common_cols_path = '../common_cols_json.json'):
 	
 		with open(param_columns_path) as infile:
 			self.columns_from_json = json.load(infile)
@@ -17,6 +17,9 @@ class Read_Class:
 		with open(param_add_columns_path) as infile:
 			self.add_columns_from_json = json.load(infile)
 		
+		with open(param_common_cols_path) as infile:
+			self.common_columns_from_json = json.load(infile)
+
 		with open(param_default_ssh_path) as infile:
 			self.default_ssh_from_json = json.load(infile)
 		
@@ -26,6 +29,7 @@ class Read_Class:
 				
 		self.columns_list = json.loads(self.columns_from_json)
 		self.add_columns_list = json.loads(self.add_columns_from_json)
+		self.common_columns_list = json.loads(self.common_columns_from_json)
 		self.all_columns_list = self.columns_list + self.add_columns_list
 
 		with open(param_client_info_path) as infile:
@@ -37,11 +41,17 @@ class Read_Class:
 	def add_columns_list(self):
 		return self.add_columns_list
 	
+	def common_columns_list(self):
+		return self.common_columns_list
+
 	def columns_json(self):
 		return self.columns_from_json
 
 	def add_columns_json(self):
 		return self.add_columns_from_json
+
+	def common_columns_json(self):
+		return self.common_columns_from_json
 
 	def all_columns_list(self):
 		return self.all_columns_list
@@ -60,6 +70,11 @@ class Read_Class:
 		self.all_columns_startwith_ViewData_list = self.list_check_and_add_str(param_check_string = 'ViewData.', param_check_and_add_list = self.columns_list) + self.list_check_and_add_str(param_check_string = 'ViewData.', param_check_and_add_list = self.add_columns_list)
 		self.all_columns_startwith_ViewData_dict = {i : 1 for i in self.all_columns_startwith_ViewData_list}
 		return self.all_columns_startwith_ViewData_dict
+
+	def common_columns_query(self):
+		self.common_columns_startwith_ViewData_list = self.list_check_and_add_str(param_check_string = 'ViewData.', param_check_and_add_list = self.common_columns_list)
+		self.common_columns_startwith_ViewData_dict = {i : 1 for i in self.common_columns_startwith_ViewData_list}
+		return self.common_columns_startwith_ViewData_dict
 
 	def ssh_host(self):
 		return self.default_ssh_from_json['DEFAULT_SSH_HOST']
