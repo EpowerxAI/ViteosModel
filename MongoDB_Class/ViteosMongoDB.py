@@ -10,7 +10,7 @@ import pymongo
 import logging
 import sys
 import pandas as pd
-import Read_Class as rd_cl
+from Read_Class.Read_Class import Read_Class as rd_cl
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
 LOGGER = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ LOGGER = logging.getLogger(__name__)
 #DEFAULT_MONGO_PASSWORD = 'Viteos123'
 
 # We will get the default ssh and mongo credentails from the Read_Class
-rd_cl_obj = rd_cl()
+#rd_cl_obj = rd_cl()
 
 
 class ViteosMongoDB:
@@ -41,16 +41,19 @@ class ViteosMongoDB:
 #                 param_MONGO_DB = None, 
 #		 param_MONGO_COLLECTION = None
 		 ):
-        
+        rd_cl_obj = rd_cl()
+	print(dir(rd_cl_obj))
+	import pdb
+	pdb.set_trace()
         self.without_ssh = param_without_ssh
         
         if param_SSH_HOST is None:
-            self.SSH_HOST = rd_cl.ssh_host()
+            self.SSH_HOST = rd_cl_obj.ssh_host()
         else:
             self.SSH_HOST = param_SSH_HOST
         
         if param_SSH_PORT is None:
-            self.SSH_PORT = rd_cl.ssh_port()
+            self.SSH_PORT = rd_cl_obj.ssh_port()
         else:
             self.SSH_PORT = param_SSH_PORT
 
@@ -189,36 +192,36 @@ class ViteosMongoDB:
 #        self.DB_to_use()
 #        self.collection_to_use()
     
-    def get_data_for_TaskID(self, param_collection, param_TaskID = None):
+#    def get_data_for_TaskID(self, param_collection, param_TaskID = None):
+#        try:
+#	    collection = param_collection
+#            cursor = collection.find( 
+#						{
+#						"TaskInstanceID": param_TaskID, 
+#						"ViewData":{"$ne":None},
+#						"ViewData.Status": { $nin: ['HST', 'OC', 'CT'] }, 
+#						"MatchStatus":{"$ne":21}, 
+#						"ViewData.CombinedAndIsPaired" : False
+#						},
+#						rd_cl.all_columns_query()
+#					 )
+#
+#            self.df_cursor = pd.DataFrame(list(cursor))
+#            print ('\n Cash data - {} rows,cols loaded from mongodb\n'.format(self.df_cursor.shape))
+#
+#        except Exception as e:
+#            print( str(e))
+#        
+#        if self.df_cursor.shape[0] == 0:
+#            raise ValueError('empty dataframe - no data to make predictions on! for ' + param_TaskID)
+
+    def get_data_for_collection(self, param_collection):
         try:
-	    collection = param_collection
-            cursor = collection.find( 
-						{
-						"TaskInstanceID": param_TaskID, 
-						"ViewData":{"$ne":None},
-						"ViewData.Status": { $nin: ['HST', 'OC', 'CT'] }, 
-						"MatchStatus":{"$ne":21}, 
-						"ViewData.CombinedAndIsPaired" : False
-						},
-						rd_cl.all_columns_query()
-					 )
-
-            self.df_cursor = pd.DataFrame(list(cursor))
-            print ('\n Cash data - {} rows,cols loaded from mongodb\n'.format(self.df_cursor.shape))
-
-        except Exception as e:
-            print( str(e))
-        
-        if self.df_cursor.shape[0] == 0:
-            raise ValueError('empty dataframe - no data to make predictions on! for ' + param_TaskID)
-
-    def get_data_for_collection(self, param_collection)
-	try:
-	    collection = param_collection
+            collection = param_collection
             cursor = collection.find( 
 						{
 						"ViewData":{"$ne":None},
-						"ViewData.Status": { $nin: ['HST', 'OC', 'CT'] }, 
+						"ViewData.Status": { "$nin": ['HST', 'OC', 'CT'] }, 
 						"MatchStatus":{"$ne":21}, 
 						"ViewData.CombinedAndIsPaired" : False
 						},
@@ -235,34 +238,37 @@ class ViteosMongoDB:
         if df_cursor.shape[0] == 0:
             raise ValueError('empty dataframe - no data to make predictions on for collection ' + param_collection)
 	
-	df_to_return = df_cursor['ViewData'].apply(pd.Series)
-	return df_to_return
+        df_to_return = df_cursor['ViewData'].apply(pd.Series)
+        return df_to_return
 
     def df_to_evaluate(self, param_setup_prefix = 'HST_RecData_'):
-	clients_list = list(rd_cl.client_info.keys())
-	df = pd.DataFrame()
-	for client in clients_list:
-		database_for_client = rd_cl.client_info.get(client, {}).get('DB')
-		setups_list = list(rd_cl.client_info.get(client, {}).get('Setups').keys())
-		setups_to_evaluate_list_temp = []
+        clients_list = list(rd_cl.client_info.keys())
+        df = pd.DataFrame()
+        for client in clients_list:
+                database_for_client = rd_cl.client_info.get(client, {}).get('DB')
+                setups_list = list(rd_cl.client_info.get(client, {}).get('Setups').keys())
+                setups_to_evaluate_list_temp = []
 		
-		for setup in setups_list:
-			if rd_cl.client_info.get(client, {}).get('Setups', {}).get(setup) == 1 :
+                for setup in setups_list:
+                       if rd_cl.client_info.get(client, {}).get('Setups', {}).get(setup) == 1 :
 				
-				setups_to_evaluate_list_temp.append(setup)
-				db_to_use = self.client[database_for_client]
+                            setups_to_evaluate_list_temp.append(setup)
+                            db_to_use = self.client[database_for_client]
+                            db_to_use = self.client[database_for_client]
 				
-				collection_to_use_name = param_setup_prefix + setup
-				collection_to_use = db_to_use[collection_to_use_name]
-				df = df.append(self.get_data_for_collection(param_collection = collection_to_use))	
+                            collection_to_use_name = param_setup_prefix + setup
+                            collection_to_use = db_to_use[collection_to_use_name]
+                            df = df.append(self.get_data_for_collection(param_collection = collection_to_use))	
 				
 					 		
-	setups_to_evaluate_list_temp = [param_setup_prefix + element for element in setups_to_evaluate_list_temp]
-	self.setups_to_evaluate_list = setups_to_evaluate_list_temp
-   
+        setups_to_evaluate_list_temp = [param_setup_prefix + element for element in setups_to_evaluate_list_temp]
+        self.setups_to_evaluate_list = setups_to_evaluate_list_temp
+        
+        self.df_main = df
+        
     def make_df(self):
 	
-	self.df = self.df_cursor['ViewData'].apply(pd.Series)
+        self.df = self.df_cursor['ViewData'].apply(pd.Series)
 
     
     

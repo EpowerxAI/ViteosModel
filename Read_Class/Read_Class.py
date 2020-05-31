@@ -62,7 +62,7 @@ class Read_Class:
 	def list_check_and_add_str(self, param_check_string, param_check_and_add_list):
 		list_startwith_string = [i for i in param_check_and_add_list if i.startswith(param_check_string)]
 		list_not_startwith_string = [i for i in param_check_and_add_list if i not in list_startwith_string]
-		list_all_startwith_string = [param_check_string + i for in list_not_startwith_string]
+		list_all_startwith_string = [param_check_string + i for i in list_not_startwith_string]
 		list_all_startwith_string = list_startwith_string + list_all_startwith_string
 		return list_all_startwith_string
 
@@ -112,4 +112,5 @@ if __name__ == '__main__':
 	print(type(ReadColsTest_obj.add_columns_from_json))
 	print(ReadColsTest_obj.columns_list())
 	print(ReadColsTest_obj.add_columns_list())
+        print(ReadColsTest_obj.ssh_host())
 
