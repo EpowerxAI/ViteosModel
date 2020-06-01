@@ -43,46 +43,46 @@ class ViteosMongoDB:
 #                 param_MONGO_DB = None, 
 #		 param_MONGO_COLLECTION = None
 		 ):
-        rd_cl_obj = rd_cl()
+        self.rd_cl_obj = rd_cl()
         self.without_ssh = param_without_ssh
         
         if param_SSH_HOST is None:
-            self.SSH_HOST = rd_cl_obj.ssh_host()
+            self.SSH_HOST = self.rd_cl_obj.ssh_host()
         else:
             self.SSH_HOST = param_SSH_HOST
         
         if param_SSH_PORT is None:
-            self.SSH_PORT = rd_cl_obj.ssh_port()
+            self.SSH_PORT = self.rd_cl_obj.ssh_port()
         else:
             self.SSH_PORT = param_SSH_PORT
 
         if param_SSH_USERNAME is None:
-            self.SSH_USERNAME = rd_cl_obj.ssh_username()
+            self.SSH_USERNAME = self.rd_cl_obj.ssh_username()
         else:
             self.SSH_USERNAME = param_SSH_USERNAME
 
         if param_SSH_PASSWORD is None:
-            self.SSH_PASSWORD = rd_cl_obj.ssh_password()
+            self.SSH_PASSWORD = self.rd_cl_obj.ssh_password()
         else:
             self.SSH_PASSWORD = param_SSH_PASSWORD
 
         if param_MONGO_HOST is None:
-            self.MONGO_HOST = rd_cl_obj.mongo_host()
+            self.MONGO_HOST = self.rd_cl_obj.mongo_host()
         else:
             self.MONGO_HOST = param_MONGO_HOST
         
         if param_MONGO_PORT is None:
-            self.MONGO_PORT = rd_cl_obj.mongo_port()
+            self.MONGO_PORT = self.rd_cl_obj.mongo_port()
         else:
             self.MONGO_PORT = param_MONGO_PORT
 
         if param_MONGO_USERNAME is None:
-            self.MONGO_USERNAME = rd_cl_obj.mongo_username()
+            self.MONGO_USERNAME = self.rd_cl_obj.mongo_username()
         else:
             self.MONGO_USERNAME = param_MONGO_USERNAME
         
         if param_MONGO_PASSWORD is None:
-            self.MONGO_PASSWORD = rd_cl_obj.mongo_password()
+            self.MONGO_PASSWORD = self.rd_cl_obj.mongo_password()
         else:
             self.MONGO_PASSWORD = param_MONGO_PASSWORD
     
@@ -107,7 +107,7 @@ class ViteosMongoDB:
         LOGGER.info(self.client_without_ssh.list_database_names())
         
         print('\n Databases present in server ' + self.MONGO_HOST + '\n')
-        print(*self.client_ssh.list_database_names(), sep = '\n')
+        print(*self.client_without_ssh.list_database_names(), sep = '\n')
         
         
     def connect_with_ssh(self):
@@ -202,7 +202,7 @@ class ViteosMongoDB:
 #						"MatchStatus":{"$ne":21}, 
 #						"ViewData.CombinedAndIsPaired" : False
 #						},
-#						rd_cl.all_columns_query()
+#						self.rd_cl_obj.all_columns_query()
 #					 )
 #
 #            self.df_cursor = pd.DataFrame(list(cursor))
@@ -218,15 +218,15 @@ class ViteosMongoDB:
         try:
             collection = param_collection
             cursor = collection.find( 
-						{
-						"ViewData":{"$ne":None},
-						"ViewData.Status": { "$nin": ['HST', 'OC', 'CT'] }, 
-						"MatchStatus":{"$ne":21}, 
-						"ViewData.CombinedAndIsPaired" : False
-						},
-				#		rd_cl.all_columns_query()
-						rd_cl.common_columns_query() 
-					)
+                                                {
+                                                "ViewData":{"$ne":None},
+                                                "ViewData.Status": { "$nin": ['HST', 'OC', 'CT'] }, 
+                                                "MatchStatus":{"$ne":21}, 
+                                                "ViewData.CombinedAndIsPaired" : False
+                                                },
+                                                #self.rd_cl.all_columns_query()
+                                                self.rd_cl_obj.common_columns_query() 
+                                    )
 
             df_cursor = pd.DataFrame(list(cursor))
             print ('\n Cash data - {} rows,cols loaded from mongodb\n'.format(df_cursor.shape))
@@ -241,15 +241,15 @@ class ViteosMongoDB:
         return df_to_return
 
     def df_to_evaluate(self, param_setup_prefix = 'HST_RecData_'):
-        clients_list = list(rd_cl.client_info.keys())
+        clients_list = list(self.rd_cl_obj.client_info().keys())
         df = pd.DataFrame()
         for client in clients_list:
-                database_for_client = rd_cl.client_info.get(client, {}).get('DB')
-                setups_list = list(rd_cl.client_info.get(client, {}).get('Setups').keys())
+                database_for_client = self.rd_cl_obj.client_info().get(client, {}).get('DB')
+                setups_list = list(self.rd_cl_obj.client_info().get(client, {}).get('Setups').keys())
                 setups_to_evaluate_list_temp = []
 		
                 for setup in setups_list:
-                       if rd_cl.client_info.get(client, {}).get('Setups', {}).get(setup) == 1 :
+                       if self.rd_cl_obj.client_info().get(client, {}).get('Setups', {}).get(setup) == 1 :
 				
                             setups_to_evaluate_list_temp.append(setup)
                             db_to_use = self.client[database_for_client]
@@ -267,7 +267,7 @@ class ViteosMongoDB:
         
     def make_df(self):
 	
-        self.df = self.df_cursor['ViewData'].apply(pd.Series)
+        self.df = self.df_main['ViewData'].apply(pd.Series)
 
     
     
@@ -278,6 +278,8 @@ class ViteosMongoDB:
 if __name__ == '__main__':
     test_client = ViteosMongoDB()
     test_client.connect_with_or_without_ssh()
-
+    test_client.df_to_evaluate()
+    test_client.make_df()
+    print(test_client.df.shape)
         
                                      

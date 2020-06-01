@@ -1,0 +1,19 @@
+Invoking function connect_without_ssh
+Connecting to 10.1.15.138
+Mongo Client without ssh created
+
+ Databases present in server 10.1.15.138
+
+ML_ReconDB
+ML_ReconDB_Soros
+admin
+config
+local
+test
+testDB
+Traceback (most recent call last):
+  File "ViteosMongoDB.py", line 281, in <module>
+    test_client.df_to_evaluate()
+  File "ViteosMongoDB.py", line 244, in df_to_evaluate
+    clients_list = list(rd_cl.client_info.keys())
+AttributeError: 'function' object has no attribute 'keys'
