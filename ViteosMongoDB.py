@@ -5,12 +5,14 @@ Created on Tue May 12 17:23:09 2020
 
 @author: consultant138
 """
+
 import sshtunnel
 import pymongo
 import logging
 import sys
+sys.path.append('..')
 import pandas as pd
-from Read_Class.Read_Class import Read_Class as rd_cl
+from Read_Class import Read_Class as rd_cl
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
 LOGGER = logging.getLogger(__name__)
@@ -27,7 +29,7 @@ LOGGER = logging.getLogger(__name__)
 #DEFAULT_MONGO_PASSWORD = 'Viteos123'
 
 # We will get the default ssh and mongo credentails from the Read_Class
-#rd_cl_obj = rd_cl()
+rd_cl_obj1 = rd_cl()
 
 
 class ViteosMongoDB:
@@ -42,9 +44,6 @@ class ViteosMongoDB:
 #		 param_MONGO_COLLECTION = None
 		 ):
         rd_cl_obj = rd_cl()
-	print(dir(rd_cl_obj))
-	import pdb
-	pdb.set_trace()
         self.without_ssh = param_without_ssh
         
         if param_SSH_HOST is None:
@@ -58,32 +57,32 @@ class ViteosMongoDB:
             self.SSH_PORT = param_SSH_PORT
 
         if param_SSH_USERNAME is None:
-            self.SSH_USERNAME = rd_cl.ssh_username()
+            self.SSH_USERNAME = rd_cl_obj.ssh_username()
         else:
             self.SSH_USERNAME = param_SSH_USERNAME
 
         if param_SSH_PASSWORD is None:
-            self.SSH_PASSWORD = rd_cl.ssh_password()
+            self.SSH_PASSWORD = rd_cl_obj.ssh_password()
         else:
             self.SSH_PASSWORD = param_SSH_PASSWORD
 
         if param_MONGO_HOST is None:
-            self.MONGO_HOST = rd_cl.mongo_host()
+            self.MONGO_HOST = rd_cl_obj.mongo_host()
         else:
             self.MONGO_HOST = param_MONGO_HOST
         
         if param_MONGO_PORT is None:
-            self.MONGO_PORT = rd_cl.mongo_port()
+            self.MONGO_PORT = rd_cl_obj.mongo_port()
         else:
             self.MONGO_PORT = param_MONGO_PORT
 
         if param_MONGO_USERNAME is None:
-            self.MONGO_USERNAME = rd_cl.mongo_username()
+            self.MONGO_USERNAME = rd_cl_obj.mongo_username()
         else:
             self.MONGO_USERNAME = param_MONGO_USERNAME
         
         if param_MONGO_PASSWORD is None:
-            self.MONGO_PASSWORD = rd_cl.mongo_password()
+            self.MONGO_PASSWORD = rd_cl_obj.mongo_password()
         else:
             self.MONGO_PASSWORD = param_MONGO_PASSWORD
     
@@ -277,9 +276,8 @@ class ViteosMongoDB:
         
     
 if __name__ == '__main__':
-    test_client = ViteosMongoDB(param_without_ssh = False,param_MONGO_DB = 'ML_ReconDB', param_MONGO_COLLECTION = 'HST_RecData_123')
+    test_client = ViteosMongoDB()
     test_client.connect_with_or_without_ssh()
-#    test_client.make_connection()
-    test_client.get_data_for_TaskID(param_TaskID = 123726192)
+
         
                                      
