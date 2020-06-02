@@ -267,7 +267,7 @@ class ViteosMongoDB:
         
     def make_df(self):
 	
-        self.df = self.df_main['ViewData'].apply(pd.Series)
+        print(self.df_main.shape)
 
     
     
@@ -280,6 +280,6 @@ if __name__ == '__main__':
     test_client.connect_with_or_without_ssh()
     test_client.df_to_evaluate()
     test_client.make_df()
-    print(test_client.df.shape)
+    print(test_client.df_main.shape)
         
                                      
