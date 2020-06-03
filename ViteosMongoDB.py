@@ -12,7 +12,7 @@ import logging
 import sys
 sys.path.append('..')
 import pandas as pd
-from Read_Class import Read_Class as rd_cl
+from Read import Read_Class as rd_cl
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
 LOGGER = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ LOGGER = logging.getLogger(__name__)
 rd_cl_obj1 = rd_cl()
 
 
-class ViteosMongoDB:
+class ViteosMongoDB_Class:
     
     def __init__(self, param_without_ssh = True, 
                  param_SSH_HOST = None, param_SSH_PORT = None,
@@ -215,7 +215,7 @@ class ViteosMongoDB:
         
     
 if __name__ == '__main__':
-    test_client = ViteosMongoDB()
+    test_client = ViteosMongoDB_Class()
     test_client.connect_with_or_without_ssh()
     test_client.df_to_evaluate()
     test_client.make_df()
