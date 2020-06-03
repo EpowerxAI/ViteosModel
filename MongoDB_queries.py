@@ -19,7 +19,7 @@ class MongoQueries_Class:
                                                                     },
                                                               'count': { '$sum': 1 }
                                                  }}
-                                                  ])
+                                                  ],  allowDiskUse =  True  )
         return query_result
     
     
