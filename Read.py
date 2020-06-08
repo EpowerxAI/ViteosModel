@@ -110,7 +110,7 @@ if __name__ == '__main__':
         print(type(ReadColsTest_obj.columns_from_json))
         print(ReadColsTest_obj.add_columns_from_json)
         print(type(ReadColsTest_obj.add_columns_from_json))
-        print(ReadColsTest_obj.columns_list())
-        print(ReadColsTest_obj.add_columns_list()) 
+        print(ReadColsTest_obj.columns_list)
+        print(ReadColsTest_obj.add_columns_list) 
         print(ReadColsTest_obj.ssh_host())
 

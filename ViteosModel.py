@@ -23,7 +23,7 @@ from catboost import CatBoostClassifier
 
 class ViteosModel_Class:
 	      
-        def __init__(self):
+        def __init__(self, param_without_ssh = True):
             
                 mngdb_obj = mngdb()
                 print("ViteosMongoDB instance created")
@@ -40,9 +40,9 @@ class ViteosModel_Class:
                 print("ViteosMongoDB instance dataframe ready to be consumed by the ViteosModel class")
 	
                 print("The shape of the dataframe to be evalued for modelling is \n")
-                mngdb.df.shape()
+                mngdb_obj.df_main.shape
                 
-                self.df = mngdb.df
+                self.df = mngdb_obj.df_main
 
                 self.common_cols = ['ViewData.Accounting Net Amount', 'ViewData.Age',
                                'ViewData.Age WK', 'ViewData.Asset Type Category',

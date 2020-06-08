@@ -175,8 +175,10 @@ class ViteosMongoDB_Class:
         
         if df_cursor.shape[0] == 0:
             raise ValueError('empty dataframe - no data to make predictions on for collection ' + param_collection)
-	
+	    
+        print("Starting to make ViewData columns from _id columns")
         df_to_return = df_cursor['ViewData'].apply(pd.Series)
+        print("ViewData columns making process - Done")
         return df_to_return
 
     def df_to_evaluate(self, param_setup_prefix = 'HST_RecData_'):
