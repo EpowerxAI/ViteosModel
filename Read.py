@@ -6,10 +6,20 @@ Created on Tue May 28 19:35:29 2020
 @author: consultant138
 """
 import json
-
+#import csv
+import pandas as pd
 class Read_Class:
 	
-        def __init__(self, param_columns_path = 'columns_json.json', param_add_columns_path = 'add_columns_json.json', param_default_ssh_path = 'default_ssh.json', param_default_mongo_path = 'default_mongo.json', param_client_info_path = 'weiss_client_info_json.json', param_common_cols_path = 'common_cols_json.json'):
+        def __init__(self, param_columns_path = 'columns_json.json',
+                     param_add_columns_path = 'add_columns_json.json',
+                     param_default_ssh_path = 'default_ssh.json',
+                     param_default_mongo_path = 'default_mongo.json',
+                     param_client_info_path = 'client_info_json.json',
+                     param_common_cols_path = 'common_cols_json.json', 
+                     param_test_messages_to_RabbitMQ = 'test_messages_to_RabbitMQ.json'
+                     ):
+                     #, 
+                     #param_db_for_setup_path = 'db_for_setup_json.json'):
 	
                 with open(param_columns_path) as infile:
                         self.columns_from_json = json.load(infile)
@@ -25,8 +35,12 @@ class Read_Class:
 		
                 with open(param_default_mongo_path) as infile:
                         self.default_mongo_from_json = json.load(infile)
-		
-				
+                
+#                with open(param_db_for_setup_path) as infile:
+#                        self.db_for_setup_from_json = json.load(infile)
+                        
+                self.df_test_messages_to_RabbitMQ = pd.read_json(param_test_messages_to_RabbitMQ)                        
+                self.df_test_messages_to_RabbitMQ.columns = ['Task_Instance_ID', 'csc','Recon_Purpose','Collection','Request_ID']
                 self.columns_list = json.loads(self.columns_from_json)
                 self.add_columns_list = json.loads(self.add_columns_from_json)
                 self.common_columns_list = json.loads(self.common_columns_from_json) 
@@ -102,7 +116,24 @@ class Read_Class:
 	
         def client_info(self):
                 return self.client_info_dict
-
+            
+        def fun_df_test_messages_to_RabbitMQ(self):
+                return self.df_test_messages_to_RabbitMQ
+        
+        def fun_db_for_setup_dict(self):
+                clients_list = list(self.client_info_dict.keys())
+                self.db_for_setup_dict = {}
+                for client in clients_list:
+                        self.db_for_setup_dict.update({'HST_RecData_' + i : self.client_info_dict.get(client,{}).get('DB') for i in self.client_info_dict.get(client,{}).get('Setups',{}).keys()})
+                return self.db_for_setup_dict
+        
+        def fun_client_for_setup_dict(self):
+                clients_list = list(self.client_info_dict.keys())
+                self.client_for_setup_dict = {}
+                for client in clients_list:
+                        self.client_for_setup_dict.update({'HST_RecData_' + i : client + '_' + i for i in self.client_info_dict.get(client,{}).get('Setups',{}).keys()})
+                return self.client_for_setup_dict
+            
 if __name__ == '__main__':
         ReadColsTest_obj = Read_Class(param_columns_path = 'columns_json.json',
                                           param_add_columns_path = 'add_columns_json.json')
