@@ -18,7 +18,7 @@ LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
 LOGGER = logging.getLogger(__name__)
 from pandas.io.json import json_normalize
-
+import inspect
 
 
 #DEFAULT_SSH_HOST = '10.1.15.138'
@@ -33,30 +33,87 @@ from pandas.io.json import json_normalize
 
 # We will get the default ssh and mongo credentails from the Read_Class
 #rd_cl_obj1 = rd_cl()
-def log_and_time(method):
-    def log_and_time_inner(*args, **kw):
+
+#def log_and_time(method):
+#    def log_and_time_inner(*args, **kw):
+#        ts = time.time()
+#        LOGGER.info('START of function %r from class %r' % (method.__name__, method.__class__.__name__))
+#        print('START of function %r from %r' % (method.__name__, method.__class__.__name__))
+#
+#        result = method(*args, **kw)
+#        
+#        LOGGER.info('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
+#        print('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
+#        
+#        te = time.time()
+#        
+#        LOGGER.info('%r (%r, %r) %2.2f sec' % \
+#             (method.__name__, args, kw, te - ts))
+#        print('%r (%r, %r) %2.2f sec' % \
+#             (method.__name__, args, kw, te - ts))
+#        return result
+#
+#    return log_and_time_inner
+
+
+#def loggin_decorator(*_args):
+def logging_decorator(fn):
+    def wrapper(*args, **kwargs):
+        try :
+            is_method   = inspect.getargspec(fn)[0][0] == 'self'
+        except :
+            is_method   = False
+
+        if is_method :
+            name    = 'Module : {} \nFunction Class : {} \nFunction Name{}'.format(fn.__module__, args[0].__class__.__name__, fn.__name__)
+        else :
+            name    = 'Module : {} \nFunction Name{}'.format(fn.__module__, fn.__name__)
+            
+            
         ts = time.time()
-        LOGGER.info('START of function %r from class %r' % (method.__name__, method.__class__.__name__))
-        print('START of function %r from %r' % (method.__name__, method.__class__.__name__))
-
-        result = method(*args, **kw)
-        
-        LOGGER.info('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
-        print('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
-        
+        LOGGER.info('START \n ' + name)
+        print('START \n ' + name)
+            
+        result = fn(*args,**kwargs)
+            
         te = time.time()
-        
-        LOGGER.info('%r (%r, %r) %2.2f sec' % \
-             (method.__name__, args, kw, te - ts))
-        print('%r (%r, %r) %2.2f sec' % \
-             (method.__name__, args, kw, te - ts))
+            
+        LOGGER.info('STOP \n ' + name)
+        print('STOP \n ' + name)
+            
+        LOGGER.info('Time Taken : %2.2f sec' % (te - ts))
+        print('Time Taken : %2.2f sec' % (te - ts))
+            
         return result
-
-    return log_and_time_inner
+    return wrapper
+    
+#    return _loggin_decorator
 
 class ViteosMongoDB_Class:
 
-    @log_and_time
+#    def log_and_time(method):
+#        print('log and time started')
+#        def log_and_time_inner(*args, **kw):
+#            ts = time.time()
+#            LOGGER.info('START of function %r from class %r' % (method.__name__, method.__class__.__name__))
+#            print('START of function %r from %r' % (method.__name__, method.__class__.__name__))
+#
+#            result = method(*args, **kw)
+#        
+#            LOGGER.info('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
+#            print('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
+#        
+#            te = time.time()
+#        
+#            LOGGER.info('%r (%r, %r) %2.2f sec' % \
+#                 (method.__name__, args, kw, te - ts))
+#            print('%r (%r, %r) %2.2f sec' % \
+#                 (method.__name__, args, kw, te - ts))
+#            return result
+#
+#        return log_and_time_inner
+    
+    @logging_decorator
     def __init__(self, param_without_ssh = True, param_without_RabbitMQ_pipeline = True,
                  param_SSH_HOST = None, param_SSH_PORT = None,
                  param_SSH_USERNAME = None, param_SSH_PASSWORD = None,
@@ -66,6 +123,7 @@ class ViteosMongoDB_Class:
 #                 param_MONGO_DB = None, 
 #		 param_MONGO_COLLECTION = None
 		 ):
+
         self.rd_cl_obj = rd_cl()
         self.without_ssh = param_without_ssh
         self.without_RabbitMQ_pipeline = param_without_RabbitMQ_pipeline
@@ -115,7 +173,8 @@ class ViteosMongoDB_Class:
 #        # Note: We will get the MONGO_DB and MONGO_COLLECTION later in the code from functions self.DB_to_use() and self.Collection_to_use()
 #        self.MONGO_DB = param_MONGO_DB
 #        self.MONGO_COLLECTION = param_MONGO_COLLECTION
-        
+    
+    @logging_decorator
     def connect_without_ssh(self):
         
         LOGGER.info('Invoking function connect_without_ssh')
@@ -135,7 +194,7 @@ class ViteosMongoDB_Class:
         print('\n Databases present in server ' + self.MONGO_HOST + '\n')
         print(*self.client_without_ssh.list_database_names(), sep = '\n')
         
-        
+    @logging_decorator    
     def connect_with_ssh(self):
 
         LOGGER.info('Invoking function connect_with_ssh')
@@ -170,7 +229,7 @@ class ViteosMongoDB_Class:
         print('\n Databases present in server ' + self.MONGO_HOST + '\n')
         print(*self.client_with_ssh.list_database_names(), sep = '\n')
         
-
+    @logging_decorator
     def connect_with_or_without_ssh(self):
         if(self.without_ssh == True):
             self.connect_without_ssh()
@@ -178,7 +237,8 @@ class ViteosMongoDB_Class:
         else:
             self.connect_with_ssh()
             self.client = self.client_with_ssh
-        
+    
+    @logging_decorator    
     def get_data_for_collection(self, param_collection, param_client_setup_flag_name, param_taskinstance_id = None):
         try:
             collection = param_collection
@@ -211,6 +271,7 @@ class ViteosMongoDB_Class:
         print("ViewData columns making process - Done")
         return df_to_return
 
+    @logging_decorator
     def df_to_evaluate_without_RabbitMQ_pipeline(self, param_setup_prefix = 'HST_RecData_'):
         clients_list = list(self.rd_cl_obj.client_info().keys())
         df = pd.DataFrame()
@@ -237,6 +298,7 @@ class ViteosMongoDB_Class:
         
         self.df_main = df
     
+    @logging_decorator
     def df_to_evaluate_with_RabbitMQ_pipeline(self):
         df = pd.DataFrame()	    
         for i in range(self.df_test_message_to_RabbitMQ.shape[0]):
