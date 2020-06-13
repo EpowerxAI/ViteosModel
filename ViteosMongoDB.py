@@ -7,6 +7,7 @@ Created on Tue May 12 17:23:09 2020
 """
 
 import sshtunnel
+import time
 import pymongo
 import logging
 import sys
@@ -31,11 +32,31 @@ from pandas.io.json import json_normalize
 #DEFAULT_MONGO_PASSWORD = 'Viteos123'
 
 # We will get the default ssh and mongo credentails from the Read_Class
-rd_cl_obj1 = rd_cl()
+#rd_cl_obj1 = rd_cl()
+def log_and_time(method):
+    def log_and_time_inner(*args, **kw):
+        ts = time.time()
+        LOGGER.info('START of function %r from class %r' % (method.__name__, method.__class__.__name__))
+        print('START of function %r from %r' % (method.__name__, method.__class__.__name__))
 
+        result = method(*args, **kw)
+        
+        LOGGER.info('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
+        print('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
+        
+        te = time.time()
+        
+        LOGGER.info('%r (%r, %r) %2.2f sec' % \
+             (method.__name__, args, kw, te - ts))
+        print('%r (%r, %r) %2.2f sec' % \
+             (method.__name__, args, kw, te - ts))
+        return result
+
+    return log_and_time_inner
 
 class ViteosMongoDB_Class:
-    
+
+    @log_and_time
     def __init__(self, param_without_ssh = True, param_without_RabbitMQ_pipeline = True,
                  param_SSH_HOST = None, param_SSH_PORT = None,
                  param_SSH_USERNAME = None, param_SSH_PASSWORD = None,
@@ -158,7 +179,7 @@ class ViteosMongoDB_Class:
             self.connect_with_ssh()
             self.client = self.client_with_ssh
         
-    def get_data_for_collection(self, param_collection, param_taskinstance_id = None, param_client_setup_flag_name):
+    def get_data_for_collection(self, param_collection, param_client_setup_flag_name, param_taskinstance_id = None):
         try:
             collection = param_collection
             common_inner_pipe = {"ViewData":{"$ne":None},
@@ -176,7 +197,7 @@ class ViteosMongoDB_Class:
                                     )
 
             df_to_return = json_normalize(cursor)
-            print ('\n Cash data - {} rows,cols loaded from mongodb\n'.format(df_cursor.shape))
+            print ('\n Cash data - {} rows,cols loaded from mongodb\n'.format(df_to_return.shape))
 
         except Exception as e:
             print( str(e))
@@ -218,7 +239,7 @@ class ViteosMongoDB_Class:
     
     def df_to_evaluate_with_RabbitMQ_pipeline(self):
         df = pd.DataFrame()	    
-        for i in (self.df_test_message_to_RabbitMQ.shape[0]):
+        for i in range(self.df_test_message_to_RabbitMQ.shape[0]):
             message_i = self.df_test_message_to_RabbitMQ.loc[[i]]
             task_instance_id_i = message_i[['Task_Instance_ID']]
             collection_name_i = message_i[['Collection']] 

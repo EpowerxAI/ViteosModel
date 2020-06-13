@@ -1,1 +1,16 @@
-{"Weiss": {"Setups": {"123": 1, "125": 0, "170": 0, "531": 0, "833": 0, "1200": 0}, "DB": "ML_ReconDB"}, "LongPond": {"Setups": {"585": 0, "657": 0}, "DB": "ML_ReconDB"}, "OakTree": {"Setups": {"379": 0}, "DB": "ML_ReconDB"}, "SchonFeld": {"Setups": {"85": 0, "897": 0, "1083": 0, "942": 0}, "DB": "ML_ReconDB"}, "Soros": {"Setups": {"149": 0, "153": 0, "167": 0, "179": 0, "205": 0, "206": 0, "239": 0, "173": 0, "213": 0}, "DB": "ML_ReconDB_Soros"}}
+{"Weiss": 
+    {"Setups": {"123": 1, "125": 0, "170": 0, "531": 0, "833": 0, "1200": 0}, 
+    "DB": "ML_ReconDB"}, 
+"LongPond": 
+    {"Setups": {"585": 0, "657": 0}, 
+    "DB": "ML_ReconDB"}, 
+"OakTree": 
+    {"Setups": {"379": 0}, 
+    "DB": "ML_ReconDB"}, 
+"SchonFeld": 
+    {"Setups": {"85": 0, "897": 0, "1083": 0, "942": 0}, 
+    "DB": "ML_ReconDB"}, 
+"Soros": 
+    {"Setups": {"149": 0, "153": 0, "167": 0, "179": 0, "205": 0, "206": 0, "239": 0, "173": 0, "213": 0}, 
+    "DB": "ML_ReconDB_Soros"}
+}
