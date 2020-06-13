@@ -34,29 +34,8 @@ import inspect
 # We will get the default ssh and mongo credentails from the Read_Class
 #rd_cl_obj1 = rd_cl()
 
-#def log_and_time(method):
-#    def log_and_time_inner(*args, **kw):
-#        ts = time.time()
-#        LOGGER.info('START of function %r from class %r' % (method.__name__, method.__class__.__name__))
-#        print('START of function %r from %r' % (method.__name__, method.__class__.__name__))
-#
-#        result = method(*args, **kw)
-#        
-#        LOGGER.info('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
-#        print('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
-#        
-#        te = time.time()
-#        
-#        LOGGER.info('%r (%r, %r) %2.2f sec' % \
-#             (method.__name__, args, kw, te - ts))
-#        print('%r (%r, %r) %2.2f sec' % \
-#             (method.__name__, args, kw, te - ts))
-#        return result
-#
-#    return log_and_time_inner
 
 
-#def loggin_decorator(*_args):
 def logging_decorator(fn):
     def wrapper(*args, **kwargs):
         try :
@@ -65,21 +44,21 @@ def logging_decorator(fn):
             is_method   = False
 
         if is_method :
-            name    = 'Module : {} \nFunction Class : {} \nFunction Name{}'.format(fn.__module__, args[0].__class__.__name__, fn.__name__)
+            name    = '\tModule : {} \n\tFunction Class : {} \n\tFunction Name : {}'.format(fn.__module__, args[0].__class__.__name__, fn.__name__)
         else :
-            name    = 'Module : {} \nFunction Name{}'.format(fn.__module__, fn.__name__)
+            name    = '\tModule : {} \n\tFunction Name{}'.format(fn.__module__, fn.__name__)
             
             
         ts = time.time()
-        LOGGER.info('START \n ' + name)
-        print('START \n ' + name)
+        LOGGER.info('START \n' + name)
+        print('START \n' + name)
             
         result = fn(*args,**kwargs)
             
         te = time.time()
             
-        LOGGER.info('STOP \n ' + name)
-        print('STOP \n ' + name)
+        LOGGER.info('STOP \n' + name)
+        print('STOP \n' + name)
             
         LOGGER.info('Time Taken : %2.2f sec' % (te - ts))
         print('Time Taken : %2.2f sec' % (te - ts))
@@ -87,31 +66,9 @@ def logging_decorator(fn):
         return result
     return wrapper
     
-#    return _loggin_decorator
 
 class ViteosMongoDB_Class:
 
-#    def log_and_time(method):
-#        print('log and time started')
-#        def log_and_time_inner(*args, **kw):
-#            ts = time.time()
-#            LOGGER.info('START of function %r from class %r' % (method.__name__, method.__class__.__name__))
-#            print('START of function %r from %r' % (method.__name__, method.__class__.__name__))
-#
-#            result = method(*args, **kw)
-#        
-#            LOGGER.info('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
-#            print('END of function %r from class %r' % (method.__name__, method.__class__.__name__))
-#        
-#            te = time.time()
-#        
-#            LOGGER.info('%r (%r, %r) %2.2f sec' % \
-#                 (method.__name__, args, kw, te - ts))
-#            print('%r (%r, %r) %2.2f sec' % \
-#                 (method.__name__, args, kw, te - ts))
-#            return result
-#
-#        return log_and_time_inner
     
     @logging_decorator
     def __init__(self, param_without_ssh = True, param_without_RabbitMQ_pipeline = True,
@@ -177,31 +134,31 @@ class ViteosMongoDB_Class:
     @logging_decorator
     def connect_without_ssh(self):
         
-        LOGGER.info('Invoking function connect_without_ssh')
-        LOGGER.info('Connecting to ' + self.MONGO_HOST)
+#        LOGGER.info('Invoking function connect_without_ssh')
+        LOGGER.info('Connecting to ' + self.MONGO_HOST + '\n')
         
-        print('Invoking function connect_without_ssh')
-        print('Connecting to ' + self.MONGO_HOST)
+#        print('Invoking function connect_without_ssh')
+        print('Connecting to ' + self.MONGO_HOST + '\n')
         
         self.client_without_ssh = pymongo.MongoClient(host = self.MONGO_HOST, port = self.MONGO_PORT, username = self.MONGO_USERNAME, password = self.MONGO_PASSWORD) 
 
-        LOGGER.info('Mongo Client without ssh created')
-        print('Mongo Client without ssh created')
+        LOGGER.info('\nMongo Client without ssh created\n')
+        print('\nMongo Client without ssh created\n')
 
-        LOGGER.info('\n Databases present in server ' + self.MONGO_HOST + '\n')        
+        LOGGER.info('\n\tDatabases present in server ' + self.MONGO_HOST + '\n')        
         LOGGER.info(self.client_without_ssh.list_database_names())
         
-        print('\n Databases present in server ' + self.MONGO_HOST + '\n')
-        print(*self.client_without_ssh.list_database_names(), sep = '\n')
+        print('\n\tDatabases present in server ' + self.MONGO_HOST + '\n\t\t')
+        print(*self.client_without_ssh.list_database_names(), sep = '\n\t\t')
         
     @logging_decorator    
     def connect_with_ssh(self):
 
-        LOGGER.info('Invoking function connect_with_ssh')
-        LOGGER.info('Connecting to ' + self.MONGO_HOST)
+#        LOGGER.info('Invoking function connect_with_ssh')
+        LOGGER.info('\nConnecting to ' + self.MONGO_HOST + '\n')
         
-        print('Invoking function connect_with_ssh')
-        print('Connecting to ' + self.MONGO_HOST)
+#        print('Invoking function connect_with_ssh')
+        print('\nConnecting to ' + self.MONGO_HOST + '\n')
         
         self.server = sshtunnel.SSHTunnelForwarder(
                 ssh_address_or_host = self.SSH_HOST,
@@ -210,24 +167,24 @@ class ViteosMongoDB_Class:
                 remote_bind_address = ('127.0.0.1', self.SSH_PORT)
                 )
         
-        LOGGER.info('ssh tunnel created')
-        print('ssh tunnel created')
+        LOGGER.info('\nssh tunnel created\n')
+        print('\nssh tunnel created\n')
         
         self.server.start()
         
-        LOGGER.info('Server started')
-        print('Server started')
+        LOGGER.info('\nServer started\n')
+        print('\nServer started\n')
         
         self.client_with_ssh = pymongo.MongoClient('127.0.0.1', self.server.local_bind_port, username = self.MONGO_USERNAME, password = self.MONGO_PASSWORD) 
         
-        LOGGER.info('Mongo Client with ssh created')
-        print('Mongo Client with ssh created')
+        LOGGER.info('\nMongo Client with ssh created\n')
+        print('\nMongo Client with ssh created\n')
         
-        LOGGER.info('\n Databases present in server ' + self.MONGO_HOST + '\n')
+        LOGGER.info('\n\t Databases present in server ' + self.MONGO_HOST + '\n')
         LOGGER.info(self.client_with_ssh.list_database_names())
         
-        print('\n Databases present in server ' + self.MONGO_HOST + '\n')
-        print(*self.client_with_ssh.list_database_names(), sep = '\n')
+        print('\n\t Databases present in server ' + self.MONGO_HOST + '\n\t\t')
+        print(*self.client_with_ssh.list_database_names(), sep = '\n\t\t')
         
     @logging_decorator
     def connect_with_or_without_ssh(self):
