@@ -7,24 +7,25 @@ Created on Mon Jun  8 13:59:10 2020
 """
 # This is the Rabbit MQ connection class which will be used to make an asynchronous connections to and from the server on which our model will run
 import pika
-import time
+#import time
 from Read import Read_Class as rd_cl
+from ViteosDecorator import logging_decorator
 
-def timeit(method):
-    def timed(*args, **kw):
-        ts = time.time()
-        result = method(*args, **kw)
-        te = time.time()
-        
-        print('%r (%r, %r) %2.2f sec' % \
-             (method.__name__, args, kw, te - ts))
-        return result
-
-    return timed
+#def timeit(method):
+#    def timed(*args, **kw):
+#        ts = time.time()
+#        result = method(*args, **kw)
+#        te = time.time()
+#        
+#        print('%r (%r, %r) %2.2f sec' % \
+#             (method.__name__, args, kw, te - ts))
+#        return result
+#
+#    return timed
 
 class RabbitMQ_Class:
     
-    @timeit
+    @logging_decorator
     def __init__(self, param_RABBITMQ_QUEUEING_PROTOCOL = 'amqps', 
                  param_RABBITMQ_USERNAME = 'recon2', param_RABBITMQ_PASSWORD = 'recon2', 
                  param_RABBITMQ_HOST_IP = '10.1.15.153', param_RABBITMQ_PORT = '5671', 
@@ -43,7 +44,7 @@ class RabbitMQ_Class:
         self.routing_key = param_RABBITMQ_ROUTING_KEY
         self.timeout = param_timeout
     
-    @timeit   
+    @logging_decorator   
     def fun_publish_single_message(self, param_message_body):
         connection = pika.BlockingConnection(pika.connection.URLParameters(self.connection_string))
         channel = connection.channel()
@@ -53,7 +54,7 @@ class RabbitMQ_Class:
         channel.close()
         connection.close()
     
-    @timeit 
+    @logging_decorator 
     def fun_publish_muliple_messages(self):
         if(self.test_message_publishing == True):
             for i in range(self.df_test_message_to_RabbitMQ.shape[0]):
@@ -61,7 +62,7 @@ class RabbitMQ_Class:
                 message_i_str = ','.join([str(element) for element in message_i_list])
                 self.fun_publish_single_message(param_message_body = message_i_str)
     
-    @timeit
+    @logging_decorator
     def callback(self, ch, method, properties, body):
         print(" [x] Received %r" % body)
 
@@ -72,7 +73,7 @@ class RabbitMQ_Class:
         #connection = param_connection
         connection.close()
     
-    @timeit    
+    @logging_decorator    
     def fun_consume_messages(self):
         connection = pika.BlockingConnection(pika.connection.URLParameters(self.connection_string))
         channel = connection.channel()

@@ -7,7 +7,6 @@ Created on Tue May 12 17:23:09 2020
 """
 
 import sshtunnel
-import time
 import pymongo
 import logging
 import sys
@@ -18,8 +17,7 @@ LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
 LOGGER = logging.getLogger(__name__)
 from pandas.io.json import json_normalize
-import inspect
-
+from ViteosDecorator import logging_decorator
 
 #DEFAULT_SSH_HOST = '10.1.15.138'
 #DEFAULT_SSH_PORT = 27017
@@ -34,38 +32,6 @@ import inspect
 # We will get the default ssh and mongo credentails from the Read_Class
 #rd_cl_obj1 = rd_cl()
 
-
-
-def logging_decorator(fn):
-    def wrapper(*args, **kwargs):
-        try :
-            is_method   = inspect.getargspec(fn)[0][0] == 'self'
-        except :
-            is_method   = False
-
-        if is_method :
-            name    = '\tModule : {} \n\tFunction Class : {} \n\tFunction Name : {}'.format(fn.__module__, args[0].__class__.__name__, fn.__name__)
-        else :
-            name    = '\tModule : {} \n\tFunction Name{}'.format(fn.__module__, fn.__name__)
-            
-            
-        ts = time.time()
-        LOGGER.info('START \n' + name)
-        print('START \n' + name)
-            
-        result = fn(*args,**kwargs)
-            
-        te = time.time()
-            
-        LOGGER.info('STOP \n' + name)
-        print('STOP \n' + name)
-            
-        LOGGER.info('Time Taken : %2.2f sec' % (te - ts))
-        print('Time Taken : %2.2f sec' % (te - ts))
-            
-        return result
-    return wrapper
-    
 
 class ViteosMongoDB_Class:
 

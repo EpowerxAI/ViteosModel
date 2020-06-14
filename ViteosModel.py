@@ -6,23 +6,25 @@ Created on Sun Apr 19 20:03:23 2020
 """
 
 import pandas as pd
-import numpy as np
+#import numpy as np
 #import os
 #import datetime
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from tqdm import tqdm
-from sklearn import preprocessing
+#from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+#from sklearn.ensemble import RandomForestClassifier
 #from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix
 #from sklearn.metrics import accuracy_score 
 from sklearn.metrics import classification_report 
 from ViteosMongoDB import ViteosMongoDB_Class as mngdb
+from ViteosDecorator import logging_decorator
 from catboost import CatBoostClassifier
 
 class ViteosModel_Class:
-	      
+
+        @logging_decorator  
         def __init__(self, param_without_ssh = True):
             
                 mngdb_obj = mngdb()
@@ -95,37 +97,44 @@ class ViteosModel_Class:
                                'SideB.ViewData.Currency',
                                'SideB.ViewData.Description',
                                'SideB.ViewData.ISIN']
-                
+        
+        @logging_decorator        
         def fun_reset_index(self,df):
                 df = df.reset_index()
                 df = df.drop('index',1)
                 return df
-        
+
+        @logging_decorator        
         def change_side_col_type(self,df):
                 df['ViewData.Side0_UniqueIds'] = df['ViewData.Side0_UniqueIds'].astype(str)
                 df['ViewData.Side1_UniqueIds'] = df['ViewData.Side1_UniqueIds'].astype(str)
                 return df
-        
+
+        @logging_decorator        
         def nan_to_zero_flag_side_column(self,df):
                 df.loc[df['ViewData.Side0_UniqueIds']=='nan','flag_side0'] = 0 
                 df.loc[df['ViewData.Side1_UniqueIds']=='nan','flag_side1'] = 0
                 return df
-        
+
+        @logging_decorator        
         def add_flag_side_0_1_columns(self,df):
                 df['flag_side0'] = df.apply(lambda x: len(x['ViewData.Side0_UniqueIds'].split(',')), axis=1)
                 df['flag_side1'] = df.apply(lambda x: len(x['ViewData.Side1_UniqueIds'].split(',')), axis=1)
                 return df
-                                            
+        
+        @logging_decorator                                    
         def add_A_B_Side_values_to_Trans_Side_col(self,df):
                 df.loc[df['ViewData.Side1_UniqueIds']=='nan','Trans_side'] = 'B_side'
                 df.loc[df['ViewData.Side0_UniqueIds']=='nan','Trans_side'] = 'A_side'
                 return df
-            
+
+        @logging_decorator            
         def change_A_B_Side_currency_columns(self,df):
                 df.loc[df['Trans_side']=='A_side','ViewData.B-P Currency'] = df.loc[df['Trans_side']=='A_side','ViewData.Currency']
                 df.loc[df['Trans_side']=='B_side','ViewData.Accounting Currency'] = df.loc[df['Trans_side']=='B_side','ViewData.Currency'] 
                 return df
-            
+
+        @logging_decorator            
         def add_new_cols(self,df):
                 self.df['record_null_count'] = self.df[['MetaData.0._RecordID','MetaData.1._RecordID']].isnull().sum(axis=1)
                 self.df['Date'] = pd.to_datetime(self.df['ViewData.Task Business Date']).dt.date 
@@ -139,7 +148,8 @@ class ViteosModel_Class:
                 self.df = self.add_A_B_Side_values_to_Trans_Side_col(self.df)
                 
                 self.df = self.change_A_B_Side_currency_columns(self.df)
-                
+
+        @logging_decorator                
         def choose_unique_OBs(self,df):
                 df = df.sort_values(['ViewData.BreakID','Date'], ascending = [True,False])  
                 df = self.fun_reset_index(df)
@@ -147,7 +157,8 @@ class ViteosModel_Class:
                 df = df[df['OB_unique_flag'] == 0]
                 df = self.fun_reset_index(df)                
                 return df
-          
+
+        @logging_decorator          
         def no_pair_df(self, param_no_pair_status_to_choose = ['OB'], param_sample_fraction = 0.30):
                 self.no_pair_df = self.df[(self.df['flag_side0']<=1) & (self.df['flag_side1']<=1) & (self.df['ViewData.Status'].isin(param_no_pair_status_to_choose))]
                 
@@ -162,19 +173,22 @@ class ViteosModel_Class:
                 self.no_pair_df = self.choose_unique_OBs(self.no_pair_df)
                 
                 self.no_pair_df = self.no_pair_df.sample(param_sample_fraction)
-                
+
+        @logging_decorator                
         def add_filter_key_column(self, df, param_currency_column_name):
                 df['filter_key'] = df['ViewData.Mapped Custodian Account'].astype(str) + df[param_currency_column_name].astype(str)
                 df = self.fun_reset_index(df)
                 return df
-                
+
+        @logging_decorator                
         def aa_bb(self):
                 self.aa = self.no_pair_df[self.no_pair_df['Trans_side'] == 'A_Side'] 
                 self.bb = self.no_pair_df[self.no_pair_df['Trans_side'] == 'B_Side'] 
                 
                 self.aa = self.add_filter_key_column(df = self.aa, param_currency_column_name = 'ViewData.B-P Currency')
                 self.bb = self.add_filter_key_column(df = self.bb, param_currency_column_name = 'ViewData.Accounting Currency')
-           
+
+        @logging_decorator           
         def train_test_loop(self):
                 pool = []
                 key_index =[]
@@ -220,7 +234,8 @@ class ViteosModel_Class:
                 
                 self.training_df1['SideB.ViewData.BreakID_B_side'] = self.training_df1['SideB.ViewData.BreakID_B_side'].astype('int64')
                 self.training_df1['SideA.ViewData.BreakID_A_side'] = self.training_df1['SideA.ViewData.BreakID_A_side'].astype('int64')                
-        
+
+        @logging_decorator        
         def add_umr_umb_df(self, base_df, param_status):
                 created_df = base_df[base_df['ViewData.Status'].isin([param_status])]
 
@@ -228,9 +243,11 @@ class ViteosModel_Class:
                 created_df = self.fun_reset_index(created_df)
                 return created_df
 
+        @logging_decorator
         def add_filter_key_to_df(self):
                 self.df['filter_key'] = self.df['ViewData.Mapped Custodian Account'].astype(str) + self.df['ViewData.B-P Currency'].astype(str)
 
+        @logging_decorator
         def umr_umb_loop(self, base_df, umr_umb_df, param_label_value_to_add):
                 loop_df = []
 
@@ -258,21 +275,26 @@ class ViteosModel_Class:
                 loop_df_final = self.fun_reset_index(loop_df_final)
                 
                 return loop_df_final
-            
+
+        @logging_decorator            
         def process_umr(self):
 
                 umr_all_day = self.add_umr_umb_df(base_df = self.df, param_status = 'UMR')
                 self.umr_df_final = self.umr_umb_loop(base_df = self.df, umr_umb_df = umr_all_day, param_label_value_to_add = 'UMR')      
+
+        @logging_decorator
         def process_umb(self):
 
                 umb_all_day = self.add_umr_umb_df(base_df = self.df, param_status = 'UMB')
                 self.umb_df_final = self.umr_umb_loop(base_df = self.df, umr_umb_df = umb_all_day, param_label_value_to_add = 'UMB')      
-        
+
+        @logging_decorator        
         def add_label_before_training_final_df(self):
                 self.umr_df_final['label'] = 'UMR'
                 self.umb_df_final['label'] = 'UMB'
                 self.training_df1['label'] = 'No-Pair'
-                
+
+        @logging_decorator                
         def process_train_full_df(self):
                 self.train_full = pd.concat([self.training_df1, self.umr_df_final, self.umb_df_final], axis = 0)
                 self.train_full = self.fun_reset_index(self.train_full)
@@ -291,7 +313,8 @@ class ViteosModel_Class:
                 self.train_full = self.fun_reset_index(self.train_full)
                 
          ## ONE TO MANY ##
-                
+
+        @logging_decorator                
         def process_one_to_many_with_loop(self):
                 one_to_many = self.df[(self.df['flag_side0']==1) & (self.df['flag_side1']>1) & (self.df['ViewData.Status']!='SMR')]
                 #self.one_to_many[self.one_to_many['ViewData.Side0_UniqueIds'] !='nan']['ViewData.Status'].value_counts()
@@ -326,6 +349,7 @@ class ViteosModel_Class:
                 self.full_otm_data = pd.concat(otm_pool,axis=0)
                 self.full_otm_data['label'] ='Partial_match'
 
+        @logging_decorator
         def process_train_full_new(self, param_no_pair_frac = 0.50):
                 self.train_full_new = pd.concat([self.train_full,self.full_otm_data], axis = 0)
                 self.train_full_new = self.fun_reset_index(self.train_full_new)
@@ -334,6 +358,7 @@ class ViteosModel_Class:
                 self.train_full_new = pd.concat([no_pair,rest])
                 self.train_full_new = self.fun_reset_index(self.train_full_new)
 
+        @logging_decorator
         def make_X_y_train_test(self, param_test_size_fraction = 0.30):
                 self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.train_full_new[self.model_cols].drop((['label']),axis=1), 
                                                                     self.train_full_new[self.model_cols]['label'], test_size = param_test_size_fraction, 
@@ -341,7 +366,7 @@ class ViteosModel_Class:
                 self.X_train = self.X_train.fillna(0)
                 self.X_test = self.X_test.fillna(0)
 
-                
+        @logging_decorator                
         def modelling(self, param_n_estimators = 1000, param_bootstrap_value = True, param_max_features = 'sqrt'):        
                 #model = RandomForestClassifier(n_estimators = param_n_estimators, 
                 #                               bootstrap = param_bootstrap_value,
@@ -386,15 +411,15 @@ class ViteosModel_Class:
                 #X_test['probability_UMR'] = probability_class_2
                 
                 
-if __name__ == '__main__':    
-        obj = ViteosModel_Class()
-        
-
-        obj.add_filter_key_to_df()
-        obj.process_umr()
-        obj.process_umb()          
-        obj.add_label_before_training_final_df()        
-        obj.process_train_full_df()
-        obj.process_one_to_many_with_loop()
+#if __name__ == '__main__':    
+#        obj = ViteosModel_Class()
+#        
+#
+#        obj.add_filter_key_to_df()
+#        obj.process_umr()
+#        obj.process_umb()          
+#        obj.add_label_before_training_final_df()        
+#        obj.process_train_full_df()
+#        obj.process_one_to_many_with_loop()
         
                 
