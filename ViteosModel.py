@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 #from sklearn.metrics import accuracy_score 
 from sklearn.metrics import classification_report 
-from ViteosMongoDB import ViteosMongoDB_Class as mngdb
+from ViteosMongoDB import ViteosMongoDB_Class as mngdb_cl
 from ViteosDecorator import logging_decorator
 from catboost import CatBoostClassifier
 
@@ -27,7 +27,7 @@ class ViteosModel_Class:
         @logging_decorator  
         def __init__(self, param_without_ssh = True):
             
-                mngdb_obj = mngdb()
+                mngdb_obj = mngdb_cl()
                 print("ViteosMongoDB instance created")
                 
                 mngdb_obj.connect_with_or_without_ssh()
@@ -103,7 +103,17 @@ class ViteosModel_Class:
                 df = df.reset_index()
                 df = df.drop('index',1)
                 return df
-
+        
+        @logging_decorator
+        def add_Date_col(self,df):
+                df['Date'] = pd.to_datetime(df['ViewData.Task Business Date'])
+#                df_125['Date'] = pd.to_datetime(df_125['ViewData.Task Business Date'])
+                df = df[~df['Date'].isnull()]
+                df = self.fun_reset_index(df)
+                df['Date'] = pd.to_datetime(df['Date']).dt.date 
+                df['Date'] = df['Date'].astype(str)
+                return df
+        
         @logging_decorator        
         def change_side_col_type(self,df):
                 df['ViewData.Side0_UniqueIds'] = df['ViewData.Side0_UniqueIds'].astype(str)
@@ -137,7 +147,8 @@ class ViteosModel_Class:
         @logging_decorator            
         def add_new_cols(self,df):
                 self.df['record_null_count'] = self.df[['MetaData.0._RecordID','MetaData.1._RecordID']].isnull().sum(axis=1)
-                self.df['Date'] = pd.to_datetime(self.df['ViewData.Task Business Date']).dt.date 
+
+                self.df = self.add_Date_col(self.df)                
                 
                 self.df = self.change_side_col_type(self.df)
                 

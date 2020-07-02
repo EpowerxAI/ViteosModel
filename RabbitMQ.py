@@ -84,7 +84,7 @@ class RabbitMQ_Class:
 #            channel.start_consuming()
 #        except KeyboardInterrupt:
 #            channel.stop_consuming()
-        self.body_list = []
+        self.body_bytes_list = []
         for method_frame, properties, body in channel.consume(self.queue):
             # Display the message parts
             
@@ -92,15 +92,15 @@ class RabbitMQ_Class:
 #            print(method_frame_fun)
 #            properties_fun = properties
 #            print(properties_fun)
-            body_fun = body
+            body_bytes = body
 #            print(body_fun)
-            self.body_list.append(body_fun)
+            self.body_bytes_list.append(body_bytes)
 
             # Acknowledge the message
             channel.basic_ack(method_frame.delivery_tag)
 
             # Escape out of the loop after 10 messages
-            if method_frame.delivery_tag == self.df_test_message_to_RabbitMQ.shape[0]:
+            if(method_frame.delivery_tag == self.df_test_message_to_RabbitMQ.shape[0]):
 #            if method_frame.delivery_tag is not None:
                 break
 
@@ -108,10 +108,17 @@ class RabbitMQ_Class:
         requeued_messages = channel.cancel()
         print('Requeued %i messages' % requeued_messages)
         print('body_list')
-        print(self.body_list)
+        print(self.body_bytes_list)
         
         channel.close()
         connection.close()
+    
+    @logging_decorator    
+    def fun_body_string_list(self):
+        self.fun_consume_messages()
+        self.body_string_list = [str(i,'utf-8') for i in self.body_bytes_list]
+        self.body_list = [i.split(',') for i in self.body_string_list]
+        return self.body_list
         
         
     

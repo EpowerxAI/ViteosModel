@@ -17,10 +17,50 @@ class MongoQueries_Class:
                                                                             'Status': '$ViewData.Status',
                                                                             'BreakID': '$ViewData.BreakID'
                                                                     },
-                                                              'count': { '$sum': 1 }
-                                                 }}
+                                                              'count': 
+                                                                    { 
+                                                                            '$sum': 1 
+                                                                    }
+                                                             }
+                                                  }
                                                   ],  allowDiskUse =  True  )
         return query_result
     
-    
+    def get_meo_data(self, param_collection):
+        query_result = param_collection.aggregate([
+                                                  { '$match': 
+                                                             { 'LastPerformedAction': 31} 
+                                                  }, 
+                                                  { '$sort': 
+                                                             { '_id': -1 } 
+                                                  },
+                                                  { '$group': 
+                                                             { '_id': 
+                                                                    { 
+                                                                            'taskid':"$TaskInstanceID", 
+                                                                            'parentID' :"$_parentID" 
+                                                                    },
+                                                               'count': 
+                                                                    { 
+                                                                            '$sum': 1 
+                                                                    },
+                                                               'viewData' :
+                                                                    { 
+                                                                            '$first':"$ViewData" 
+                                                                    }
+                                                             }
+                                                  },
+                                                  { '$match' : 
+                                                             { 'viewData':
+                                                                    {
+                                                                            '$ne':'null'
+                                                                    }, 
+                                                               'viewData.Status':
+                                                                    {
+                                                                            '$nin':["Archive", "HST", "OC"]
+                                                                    } 
+                                                             }
+                                                  }
+                                                  ],  allowDiskUse = True)
+        return query_result
     
