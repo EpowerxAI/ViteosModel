@@ -9,7 +9,7 @@ Created on Mon Jun  8 13:59:10 2020
 import pika
 #import time
 from Read import Read_Class as rd_cl
-from ViteosDecorator import logging_decorator
+#from ViteosDecorator import logging_decorator
 
 #def timeit(method):
 #    def timed(*args, **kw):
@@ -25,15 +25,24 @@ from ViteosDecorator import logging_decorator
 
 class RabbitMQ_Class:
     
-    @logging_decorator
-    def __init__(self, param_RABBITMQ_QUEUEING_PROTOCOL = 'amqps', 
-                 param_RABBITMQ_USERNAME = 'recon2', param_RABBITMQ_PASSWORD = 'recon2', 
-                 param_RABBITMQ_HOST_IP = '10.1.15.153', param_RABBITMQ_PORT = '5671', 
-                 param_RABBITMQ_VIRTUAL_HOST = 'viteos',
-                 param_RABBITMQ_EXCHANGE = 'ReconUATExchange_ML_test_ch01',
-                 param_RABBITMQ_QUEUE = 'VNFRecon_ReadFromML2_UAT_test_ch01',
-                 param_RABBITMQ_ROUTING_KEY = 'VNFRecon_ReadFromML2_UAT_test_binding_ch01',
-                 param_test_message_publishing = False,
+#    @logging_decorator
+#    def __init__(self, param_RABBITMQ_QUEUEING_PROTOCOL = 'amqps', 
+#                 param_RABBITMQ_USERNAME = 'recon2', param_RABBITMQ_PASSWORD = 'recon2', 
+#                 param_RABBITMQ_HOST_IP = '10.1.15.153', param_RABBITMQ_PORT = '5671', 
+#                 param_RABBITMQ_VIRTUAL_HOST = 'viteos',
+#                 param_RABBITMQ_EXCHANGE = 'ReconUATExchange_ML_test_ch01',
+#                 param_RABBITMQ_QUEUE = 'VNFRecon_ReadFromML2_UAT_test_ch01',
+#                 param_RABBITMQ_ROUTING_KEY = 'VNFRecon_ReadFromML2_UAT_test_binding_ch01',
+#                 param_test_message_publishing = False,
+#                 param_timeout = 10):
+    def __init__(self, param_RABBITMQ_QUEUEING_PROTOCOL = 'amqp', \
+                 param_RABBITMQ_USERNAME = 'recon2', param_RABBITMQ_PASSWORD = 'recon2', \
+                 param_RABBITMQ_HOST_IP = 'vitblrmleng01.viteos.com', param_RABBITMQ_PORT = '5671', \
+                 param_RABBITMQ_VIRTUAL_HOST = 'viteos', \
+                 param_RABBITMQ_EXCHANGE = 'ReconPROD_PARALLELExchange_ML', \
+                 param_RABBITMQ_QUEUE = 'VNFRecon_WriteToML_PROD_PARALLEL', \
+                 param_RABBITMQ_ROUTING_KEY = 'Recon2_WriteToML_PROD_PARALLEL', \
+                 param_test_message_publishing = True, \
                  param_timeout = 10):
         self.rd_cl_obj = rd_cl()
         self.df_test_message_to_RabbitMQ = self.rd_cl_obj.fun_df_test_messages_to_RabbitMQ()
@@ -44,7 +53,7 @@ class RabbitMQ_Class:
         self.routing_key = param_RABBITMQ_ROUTING_KEY
         self.timeout = param_timeout
     
-    @logging_decorator   
+#    @logging_decorator   
     def fun_publish_single_message(self, param_message_body):
         connection = pika.BlockingConnection(pika.connection.URLParameters(self.connection_string))
         channel = connection.channel()
@@ -54,7 +63,7 @@ class RabbitMQ_Class:
         channel.close()
         connection.close()
     
-    @logging_decorator 
+#    @logging_decorator 
     def fun_publish_muliple_messages(self):
         if(self.test_message_publishing == True):
             for i in range(self.df_test_message_to_RabbitMQ.shape[0]):
@@ -62,7 +71,7 @@ class RabbitMQ_Class:
                 message_i_str = ','.join([str(element) for element in message_i_list])
                 self.fun_publish_single_message(param_message_body = message_i_str)
     
-    @logging_decorator
+#    @logging_decorator
     def callback(self, ch, method, properties, body):
         print(" [x] Received %r" % body)
 
@@ -73,7 +82,7 @@ class RabbitMQ_Class:
         #connection = param_connection
         connection.close()
     
-    @logging_decorator    
+#    @logging_decorator    
     def fun_consume_messages(self):
         connection = pika.BlockingConnection(pika.connection.URLParameters(self.connection_string))
         channel = connection.channel()
@@ -113,7 +122,7 @@ class RabbitMQ_Class:
         channel.close()
         connection.close()
     
-    @logging_decorator    
+#    @logging_decorator    
     def fun_body_string_list(self):
         self.fun_consume_messages()
         self.body_string_list = [str(i,'utf-8') for i in self.body_bytes_list]

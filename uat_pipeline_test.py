@@ -117,7 +117,12 @@ date_iso_input_list = [date_input + 'T18:30:00.000+0000' for date_input in date_
 #setup_code_input_833 = '833'
 #setup_code_input_1200 = '1200'
 
-setup_code_input_list = ['123','125','170','531','833','1200']
+#setup_code_input_list = ['123','125','170','531','833','1200']#,'379'] -For Weiss and OakTree
+
+#setup_code_input_list = ['153','167','179','205','206','239','172','173','213'] #- For Soros
+
+setup_code_input_list = ['1440','1068','1045','1105','981','1073','966','1094']
+
 #setup_code_input_list = ['123']
 # connection 1
 mngdb_obj_1_for_instance_ids = mngdb(param_without_ssh = True, param_without_RabbitMQ_pipeline = True,
@@ -140,7 +145,9 @@ db_2_for_data_in_list_instance_ids = mngdb_obj_2_for_data_in_list_instance_ids.c
 
 mngdb_obj_3_for_writing_in_ml_server = mngdb(param_without_ssh = False, param_without_RabbitMQ_pipeline = True)
 mngdb_obj_3_for_writing_in_ml_server.connect_with_or_without_ssh()
-db_3_for_writing_in_ml_server = mngdb_obj_3_for_writing_in_ml_server.client['MeoCollections']
+db_3_for_writing_in_ml_server = mngdb_obj_3_for_writing_in_ml_server.client['MEO_AUA_Collections']
+db_4_for_MEO_data = mngdb_obj_3_for_writing_in_ml_server.client['MeoCollections']
+db_5_for_AUA_data = mngdb_obj_3_for_writing_in_ml_server.client['AUACollections']
 
 # loop start
 for setup_code in setup_code_input_list:
@@ -169,15 +176,20 @@ for setup_code in setup_code_input_list:
         list_of_dicts_instance_ids = list(query_for_instance_id_setup_and_date)
         list_instance_ids = [list_of_dicts_instance_ids[i].get('InstanceID',{}) for i in range(0,len(list_of_dicts_instance_ids))]
         
-        instance_ids_temp_path = '//vitblrdevcons01/Raman  Strategy ML 2.0/All_Data/Weiss/Setup_and_Date_wise_Task_Instance_Ids/' + setup_code + '_' + date_input + '.txt'
+        instance_ids_temp_path = '//vitblrdevcons01/Raman  Strategy ML 2.0/All_Data/HIG_Capital/Setup_and_Date_wise_Task_Instance_Ids/' + setup_code + '_' + date_input + '.txt'
         with open(instance_ids_temp_path, 'w') as f:
             for item in list_instance_ids:
                 f.write("%s\n" % item)
         
         if(len(list_instance_ids) != 0):
             query_2_for_data_in_list_instance_ids = coll_2_for_data_in_list_instance_ids.find({ 
+                        "ViewData": { "$ne": None },
+                        "ViewData.Status": { "$nin": ["HST","Archive","OC"] },
                         "TaskInstanceID" : {"$in" : list_instance_ids}
                        },{ 
+                        "LastPerformedAction" : 1,
+                        "TaskInstanceID" : 1,
+                        "SourceCombinationCode" : 1,
                         "MetaData" : 1, 
                         "ViewData" : 1
                                      })
@@ -185,10 +197,40 @@ for setup_code in setup_code_input_list:
 
             list_of_dicts_query_result_2 = list(query_2_for_data_in_list_instance_ids)
             if(len(list_of_dicts_query_result_2) != 0):
-                coll_3_for_writing_in_ml_server = db_3_for_writing_in_ml_server['HST_RecData_' + setup_code + '_' + date_input]
+                coll_3_for_writing_in_ml_server = db_3_for_writing_in_ml_server['MEO_AUA_HST_RecData_' + setup_code + '_' + date_input]
                 coll_3_for_writing_in_ml_server.insert_many(list_of_dicts_query_result_2)
+                query_4_for_MEO_data = coll_3_for_writing_in_ml_server.find({ 
+                                                                                     "LastPerformedAction": 31
+                                                                             },
+                                                                             {
+                                                                                     "LastPerformedAction" : 1,
+                                                                                     "TaskInstanceID" : 1,
+                                                                                     "SourceCombinationCode" : 1,
+                                                                                     "MetaData" : 1, 
+                                                                                     "ViewData" : 1
+                                                                             })
+                list_of_dicts_query_result_4 = list(query_4_for_MEO_data)
+                query_5_for_AUA_data = coll_3_for_writing_in_ml_server.find({ 
+                                                                                     "LastPerformedAction": { "$ne": 31 }
+                                                                             },
+                                                                            {
+                                                                                     "LastPerformedAction" : 1,
+                                                                                     "TaskInstanceID" : 1,
+                                                                                     "SourceCombinationCode" : 1,
+                                                                                     "MetaData" : 1, 
+                                                                                     "ViewData" : 1
+                                                                            })
+                list_of_dicts_query_result_5 = list(query_5_for_AUA_data)
+                if(len(list_of_dicts_query_result_4) != 0):
+                    coll_4_for_writing_MEO_data = db_4_for_MEO_data['MEO_HST_RecData_' + setup_code + '_' + date_input]
+                    coll_4_for_writing_MEO_data.insert_many(list_of_dicts_query_result_4)
+                if(len(list_of_dicts_query_result_5) != 0):
+                    coll_5_for_writing_AUA_data = db_5_for_AUA_data['AUA_HST_RecData_' + setup_code + '_' + date_input]
+                    coll_5_for_writing_AUA_data.insert_many(list_of_dicts_query_result_5)
+                
+                
         else:
-             instance_ids_temp_path_warning = '//vitblrdevcons01/Raman  Strategy ML 2.0/All_Data/Weiss/Setup_and_Date_wise_Task_Instance_Ids/WARNING_' + setup_code + '_' + date_input + '.txt'
+             instance_ids_temp_path_warning = '//vitblrdevcons01/Raman  Strategy ML 2.0/All_Data/HIG_Capital/Setup_and_Date_wise_Task_Instance_Ids/WARNING_' + setup_code + '_' + date_input + '.txt'
              with open(instance_ids_temp_path_warning, 'w') as f:
                  f.write('No instance ID found for this setup')
         
@@ -198,15 +240,16 @@ for setup_code in setup_code_input_list:
     print(setup_code)
 
 ##### Adding MEO and AUA query
-for setup_code in setup_code_input_list:
-    print('INITIATED : Setup wise MEO and AUA extraction for following setup :')
-    print(setup_code)
-    coll_1_for_instance_ids = db_1_for_instance_ids['Tasks']
-    coll_2_for_data_in_list_instance_ids = db_2_for_data_in_list_instance_ids['HST_RecData_' + setup_code]
-    
-    for date_input in date_input_list:
-        print('INITIATED : Date wise extraction for following date :')
-        print(date_input)
-        date_input_iso = date_input + 'T18:30:00.000+0000'
-        
-
+#for setup_code in setup_code_input_list:
+#    print('INITIATED : Setup wise MEO and AUA extraction for following setup :')
+#    print(setup_code)
+#    coll_1_for_instance_ids = db_1_for_instance_ids['Tasks']
+#    coll_2_for_data_in_list_instance_ids = db_2_for_data_in_list_instance_ids['HST_RecData_' + setup_code]
+#    
+#    for date_input in date_input_list:
+#        print('INITIATED : Date wise extraction for following date :')
+#        print(date_input)
+#        date_input_iso = date_input + 'T18:30:00.000+0000'
+#        
+#        if(len(list_instance_ids) != 0):
+#            meo_query = 
