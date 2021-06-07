@@ -28,10 +28,6 @@ setup = '897'
 setup_code = '897'
 number_of_days_to_go_behind = 25
 
-str_date_in_ddmmyyyy_format = '02-06-2021'
-
-date_to_analyze_ymd_format,date_to_analyze_ymd_iso_18_30_format,date_to_analyze_ymd_iso_00_00_format = Viteos_Miscellaneous_Functions.date_various_format(param_str_date_in_ddmmyyyy_format = str_date_in_ddmmyyyy_format)
-penultimate_date_to_analyze_ymd_format,penultimate_date_to_analyze_ymd_iso_18_30_format,penultimate_date_to_analyze_ymd_iso_00_00_format = Viteos_Miscellaneous_Functions.date_various_format(param_str_date_in_ddmmyyyy_format = str(parse(str_date_in_ddmmyyyy_format, dayfirst = True) - timedelta(days = 1))[0:10])
 
 mngdb_137_server = mngdb(param_without_ssh  = True, param_without_RabbitMQ_pipeline = True,
                  param_SSH_HOST = None, param_SSH_PORT = None,
@@ -115,6 +111,14 @@ print(meo_df.shape[0])
 
 date_i = pd.to_datetime(pd.to_datetime(meo_df['ViewData.Task Business Date'])).dt.date.astype(str).mode()[0]
 print(str(date_i))
+
+date_to_analyze_ymd_format = date_i
+penultimate_date_to_analyze_ymd_format = str((pd.to_datetime(date_i) - timedelta(1)).strftime('%Y-%m-%d'))
+penultimate_date_to_analyze_ymd_iso_18_30_format = penultimate_date_to_analyze_ymd_format + 'T18:30:00.000+0000'
+date_to_analyze_ymd_iso_00_00_format = date_to_analyze_ymd_format + 'T00:00:00.000+0000'
+
+str_date_in_ddmmyyyy_format = pd.to_datetime(date_i,format='%Y-%m-%d').strftime('%d-%m-%Y')
+
 meo_appended_data = ViteosQuery_obj.get_past_n_days_meo_df(param_collection_to_get_taskid_from='Tasks',param_number_of_days_to_go_behind = number_of_days_to_go_behind,param_str_date_in_ddmmyyyy_format=str_date_in_ddmmyyyy_format)
 
 days = meo_df['ViewData.Task Business Date'].value_counts().reset_index()

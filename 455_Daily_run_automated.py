@@ -32,12 +32,6 @@ setup_code = '455'
 
 ReconSetupName = 'Lombard Caceis Cash Recon'
 
-date_to_analyze = '02062021'
-penultimate_date_to_analyze = '01062021'
-date_to_analyze_ymd_format = date_to_analyze[4:] + '-' + date_to_analyze[2:4] + '-' + date_to_analyze[:2]
-penultimate_date_to_analyze_ymd_format = penultimate_date_to_analyze[4:] + '-' + penultimate_date_to_analyze[2:4] + '-' + penultimate_date_to_analyze[:2]
-penultimate_date_to_analyze_ymd_iso_18_30_format = penultimate_date_to_analyze_ymd_format + 'T18:30:00.000+0000'
-date_to_analyze_ymd_iso_00_00_format = date_to_analyze_ymd_format + 'T00:00:00.000+0000'
 
 def getDateTimeFromISO8601String(s):
     d = dateutil.parser.parse(s)
@@ -853,6 +847,11 @@ print(meo_df['Date'].value_counts())
 date_i = meo_df['Date'].mode()[0]
 
 print('Choosing the date : ' + date_i)
+
+date_to_analyze_ymd_format = date_i
+penultimate_date_to_analyze_ymd_format = str((pd.to_datetime(date_i,format='%Y-%m-%d') - timedelta(1)).strftime('%Y-%m-%d'))
+penultimate_date_to_analyze_ymd_iso_18_30_format = penultimate_date_to_analyze_ymd_format + 'T18:30:00.000+0000'
+date_to_analyze_ymd_iso_00_00_format = date_to_analyze_ymd_format + 'T00:00:00.000+0000'
 
 #os.chdir('\\\\vitblrdevcons01\\Raman  Strategy ML 2.0\\All_Data\\Lombard\\output_files')
 ##uni2 = pd.read_csv('Lombard/249/ReconDB.HST_RecData_249_01_10.csv')

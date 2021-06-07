@@ -692,12 +692,6 @@ query_1_for_MEO_data = db_for_reading_MEO_data['RecData_' + setup_code].find({
                                                              })
 list_of_dicts_query_result_1 = list(query_1_for_MEO_data)
 
-date_to_analyze = '03062021'
-penultimate_date_to_analyze = '02062021'
-date_to_analyze_ymd_format = date_to_analyze[4:] + '-' + date_to_analyze[2:4] + '-' + date_to_analyze[:2]
-penultimate_date_to_analyze_ymd_format = penultimate_date_to_analyze[4:] + '-' + penultimate_date_to_analyze[2:4] + '-' + penultimate_date_to_analyze[:2]
-penultimate_date_to_analyze_ymd_iso_18_30_format = penultimate_date_to_analyze_ymd_format + 'T18:30:00.000+0000'
-date_to_analyze_ymd_iso_00_00_format = date_to_analyze_ymd_format + 'T00:00:00.000+0000'
 
 #date_i = '2021-02-19'
 #TaskID_z = 1251200423
@@ -739,6 +733,13 @@ meo_df_taskids = list(meo_df['ViewData.Task ID'].unique())
 date_i = meo_df['Date'].mode()[0]
 print('date_i')
 print(date_i)
+
+date_to_analyze_ymd_format = date_i
+penultimate_date_to_analyze_ymd_format = str((pd.to_datetime(date_i,format='%Y-%m-%d') - timedelta(1)).strftime('%Y-%m-%d'))
+penultimate_date_to_analyze_ymd_iso_18_30_format = penultimate_date_to_analyze_ymd_format + 'T18:30:00.000+0000'
+date_to_analyze_ymd_iso_00_00_format = date_to_analyze_ymd_format + 'T00:00:00.000+0000'
+
+
 #Prepare RabbitMQ simulation message to be sent to DB for data extraction    
 meo_df_taskids = list(meo_df['ViewData.Task ID'].unique())
 m_after_reading_meo = memory_profiler.memory_usage()

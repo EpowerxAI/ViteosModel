@@ -987,12 +987,6 @@ query_1_for_MEO_data = db_for_reading_MEO_data['RecData_' + setup_code].find({
                                                              })
 list_of_dicts_query_result_1 = list(query_1_for_MEO_data)
 
-date_to_analyze = '03062021'
-penultimate_date_to_analyze = '02062021'
-date_to_analyze_ymd_format = date_to_analyze[4:] + '-' + date_to_analyze[2:4] + '-' + date_to_analyze[:2]
-penultimate_date_to_analyze_ymd_format = penultimate_date_to_analyze[4:] + '-' + penultimate_date_to_analyze[2:4] + '-' + penultimate_date_to_analyze[:2]
-penultimate_date_to_analyze_ymd_iso_18_30_format = penultimate_date_to_analyze_ymd_format + 'T18:30:00.000+0000'
-date_to_analyze_ymd_iso_00_00_format = date_to_analyze_ymd_format + 'T00:00:00.000+0000'
 
 #meo_filename = '//vitblrdevcons01/Raman  Strategy ML 2.0/All_Data/' + str(client) + '/meo_df_setup_' + str(setup_code) +'_date_' + date_to_analyze_ymd_format + '.csv'
 ##meo_filename = '//vitblrdevcons01/Raman  Strategy ML 2.0/All_Data/OakTree/meo_df_setup_379_date_' + date_to_analyze_ymd_format + '.csv'
@@ -1029,6 +1023,12 @@ meo_df['Date'] = meo_df['Date'].astype(str)
 
 date_i = meo_df['Date'].mode()[0]
 print(str(date_i))
+
+date_to_analyze_ymd_format = date_i
+penultimate_date_to_analyze_ymd_format = str((pd.to_datetime(date_i,format='%Y-%m-%d') - timedelta(1)).strftime('%Y-%m-%d'))
+penultimate_date_to_analyze_ymd_iso_18_30_format = penultimate_date_to_analyze_ymd_format + 'T18:30:00.000+0000'
+date_to_analyze_ymd_iso_00_00_format = date_to_analyze_ymd_format + 'T00:00:00.000+0000'
+
 
 def get_BreakID_from_list_of_Side_01_UniqueIds(fun_str_list_Side_01_UniqueIds, fun_meo_df, fun_side_0_or_1):
     list_BreakID_corresponding_to_Side_01_UniqueIds = []
