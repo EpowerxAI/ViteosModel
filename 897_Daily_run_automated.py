@@ -23,11 +23,25 @@ import win32com.client
 import os
 import getpass
 
+import dateutil
+from dateutil import parser
+
 client = 'Schonfeld'
 setup = '897'
 setup_code = '897'
 number_of_days_to_go_behind = 25
 
+Schonfeld_897_number_of_days_to_go_behind = 25,
+Schonfeld_897_output_folder_path = "\\data\\Schonfeld\\output_files",
+Schonfeld_897_position_file_path = "\\\\vitblrdevcons01\\Raman  Strategy ML 2.0\\Files and Rules for Lookup\\Rules delivery from Ronson\\Schonfeld\\Schonfeld ML final\\57 Position Recon\\",
+Schonfeld_897_position_file_first_sheet_name = "FIFTY_SEVEN",
+Schonfeld_897_position_file_second_sheet_name = "FIFTY_SEVENCAY",
+Schonfeld_897_position_file_first_sheet_origin_row_number = 4,
+Schonfeld_897_position_file_first_sheet_origin_col_number = 1,
+Schonfeld_897_position_file_second_sheet_origin_row_number = 4,
+Schonfeld_897_position_file_second_sheet_origin_col_number = 1,
+Schonfeld_897_position_file_password = "SSA2020",
+Schonfeld_897_position_file_columns_list = ["Fund","Geneva Account","Investment ID","Security Type","Currency","Description","SSA vs PB Qty Difference","SSA vs PB Price Difference","SSA vs PB Local MV Difference"]
 
 mngdb_137_server = mngdb(param_without_ssh  = True, param_without_RabbitMQ_pipeline = True,
                  param_SSH_HOST = None, param_SSH_PORT = None,
@@ -69,6 +83,20 @@ print(setup_code)
 #meo_df = pd.read_csv(meo_filename)
 
 #meo_df = pd.read_csv(base_dir_containing_client + 'meo_df_setup_897_date_2021-01-04.csv')
+
+def normalize_bp_acct_col_names(fun_df):
+    bp_acct_col_names_mapping_dict = {
+                                      'ViewData.Cust Net Amount' : 'ViewData.B-P Net Amount',
+                                      'ViewData.Cust Net Amount Difference' : 'ViewData.B-P Net Amount Difference',
+                                      'ViewData.Cust Net Amount Difference Absolute' : 'ViewData.B-P Net Amount Difference Absolute',
+                                      'ViewData.CP Net Amount' : 'ViewData.B-P Net Amount',
+                                      'ViewData.CP Net Amount Difference' : 'ViewData.B-P Net Amount Difference',
+                                      'ViewData.CP Net Amount Difference Absolute' : 'ViewData.B-P Net Amount Difference Absolute',
+                                      'ViewData.PMSVendor Net Amount' : 'ViewData.Accounting Net Amount'
+                                        }
+    fun_df.rename(columns = bp_acct_col_names_mapping_dict, inplace = True)
+    return(fun_df)
+
 def getDateTimeFromISO8601String(s):
     d = dateutil.parser.parse(s)
     return d
@@ -89,6 +117,12 @@ def contains_multiple_values_in_either_Side_0_or_1_UniqueIds_for_expected_single
         return('remove')
     else:
         return('keep')
+
+def dmy_value_with_or_without_zero(param_dmy_value): 
+    if((param_dmy_value > 0) & (param_dmy_value < 10)):
+        return("0" + str(param_dmy_value))
+    else:
+        return(str(param_dmy_value))
 
 #meo_filename = '//vitblrdevcons01/Raman  Strategy ML 2.0/All_Data/' + client + '/meo_df_setup_' + setup_code + '_date_' + date_to_analyze_ymd_format + '.csv'
 #meo_df = pd.read_csv(meo_filename)
@@ -119,50 +153,131 @@ date_to_analyze_ymd_iso_00_00_format = date_to_analyze_ymd_format + 'T00:00:00.0
 
 str_date_in_ddmmyyyy_format = pd.to_datetime(date_i,format='%Y-%m-%d').strftime('%d-%m-%Y')
 
-meo_appended_data = ViteosQuery_obj.get_past_n_days_meo_df(param_collection_to_get_taskid_from='Tasks',param_number_of_days_to_go_behind = number_of_days_to_go_behind,param_str_date_in_ddmmyyyy_format=str_date_in_ddmmyyyy_format)
+#meo_appended_data = ViteosQuery_obj.get_past_n_days_meo_df(param_collection_to_get_taskid_from='Tasks',param_number_of_days_to_go_behind = number_of_days_to_go_behind,param_str_date_in_ddmmyyyy_format=str_date_in_ddmmyyyy_format)
+
+#days = meo_df['ViewData.Task Business Date'].value_counts().reset_index()
+#date = list(days[days['ViewData.Task Business Date']>50]['index'])[0]
+#
+#
+#date1 = pd.to_datetime(date)
+#
+#day = date1.day
+#mon = date1.month
+#yr = date1.year
+#
+##path = 'Schonfield\daily files\\'
+#path = '\\\\vitblrdevcons01\\Raman  Strategy ML 2.0\\Files and Rules for Lookup\\Rules delivery from Ronson\\Schonfeld\\Schonfeld ML final\\57 Position Recon\\'
+#if((day > 0) & (day < 10)):
+#    filename = '57 Position recon - '+ str(mon) + '0' + str(day) + str(yr)+'_copy.xlsx'
+#else:
+#    filename = '57 Position recon - '+ str(mon) + str(day) + str(yr)+'_copy.xlsx'
+#filename_pos_file = path + filename
+#
+#def read_pos_file_and_concat_to_single_pos_df(fun_filepath):
+#    xlsx_obj = pd.ExcelFile(fun_filepath)
+#    xlsx_sheet_names_list = xlsx_obj.sheet_names
+#    True_False_list_for_Document_Map_substring_in_xlsx_sheet_names_list = ['Document Map' in x for x in xlsx_sheet_names_list]
+#    Document_Map_substring_in_xlsx_sheet_names_list = [x for x,y in zip(xlsx_sheet_names_list,True_False_list_for_Document_Map_substring_in_xlsx_sheet_names_list) if y == True]
+#    string_name_for_Document_Map_substring_in_xlsx_sheet_names_list = Document_Map_substring_in_xlsx_sheet_names_list[0]
+#    
+#    xlsx_sheet_names_list_without_Document_Map = [x for x in xlsx_sheet_names_list if x != string_name_for_Document_Map_substring_in_xlsx_sheet_names_list]
+#    df_sheet_list = []
+#    for sheet_name in xlsx_sheet_names_list_without_Document_Map:
+#        df_sheet = xlsx_obj.parse(sheet_name,skiprows = 3)
+#        df_sheet_list.append(df_sheet)
+#    pos_df = pd.concat(df_sheet_list)
+#    return(pos_df)
+#
+#
+#    
+#def read_passowrd_protected_pos_file_and_concat_to_single_pos_df(param_filepath, param_passwrod, param_sheet_names_list, param_start_row_num, param_start_col_num):
+#    xl_app = win32com.client.Dispatch('Excel.Application')
+#    #pwd = getpass.getpass('Enter file password: ')
+#    xl_wb = xl_app.Workbooks.Open(param_filepath, False, True, None, param_passwrod)
+#    xl_app.Visible = False
+#    df_sheet_list = []
+#    for sheet_name in param_sheet_names_list:
+#        xl_sh = xl_wb.Worksheets(sheet_name)
+#
+#    # Get last row    
+#        row_num = param_start_row_num
+#        cell_val = ''
+#        while cell_val != None:
+#            cell_val = xl_sh.Cells(row_num, param_start_col_num).Value
+#            row_num = row_num + 1
+#        last_row = row_num - 2
+#
+#    # Get last_column
+#        col_num = param_start_col_num
+#        cell_val = ''
+#        while cell_val != None:
+#            cell_val = xl_sh.Cells(param_start_row_num, col_num).Value
+#            col_num = col_num + 1
+#        last_col = col_num - 2
+#    
+#        content = xl_sh.Range(xl_sh.Cells(param_start_row_num, param_start_col_num), xl_sh.Cells(last_row, last_col)).Value
+#        df_sheet = pd.DataFrame(list(content[1:]), columns=content[0])
+#        df_sheet_list.append(df_sheet)
+#    pos_df = pd.concat(df_sheet_list)
+#    return(pos_df)
+#
+#    
+#
+#pos = read_pos_file_and_concat_to_single_pos_df(fun_filepath = filename_pos_file)
+#
+
+query_for_MEO_appended_data = ReconDB_ML_137_server_for_reading['RecData_' + setup_code + '_Historic'].find({
+    "ViewData": {"$ne": None},
+     "ViewData.Business Date": { "$gte": (parser.parse(date_i) - timedelta(days=Schonfeld_897_number_of_days_to_go_behind)).strftime("%m-%d-%Y"), 
+                                 "$lte": parser.parse(date_i).strftime("%m-%d-%Y")} 
+    },
+    {
+        "DataSides": 1,
+        "BreakID": 1,
+        "LastPerformedAction": 1,
+        "TaskInstanceID": 1,
+        "SourceCombinationCode": 1,
+        "MetaData": 1,
+        "ViewData": 1
+    })
+
+list_of_dicts_query_result_MEO_appended_data = list(query_for_MEO_appended_data)
+
+if (len(list_of_dicts_query_result_MEO_appended_data) != 0):
+    meo_appended_data = json_normalize(list_of_dicts_query_result_MEO_appended_data)
+    meo_appended_data = meo_appended_data.loc[:, meo_appended_data.columns.str.startswith(('ViewData', '_createdAt'))]
+    meo_appended_data['ViewData.Task Business Date'] = meo_appended_data['ViewData.Task Business Date'].apply(dt.datetime.isoformat)
+    meo_appended_data.drop_duplicates(keep=False, inplace=True)
+    meo_appended_data = normalize_bp_acct_col_names(fun_df=meo_appended_data)
+
+    # Change added on 14-12-2020 to remove records with multiple values of Side0 and Side1 UniqueIds for statuses like OB,UOB,SDB,CNF and CMF. Typically, these statuses should have single values in Side0 and Side1 UniqueIds. So records not following expected behviour are removed
+    meo_appended_data['remove_or_keep_for_multiple_uniqueids_in_ob_issue'] = meo_appended_data.apply(lambda row: contains_multiple_values_in_either_Side_0_or_1_UniqueIds_for_expected_single_sided_status(row), axis=1, result_type="expand")
+    meo_appended_data = meo_appended_data[~(meo_appended_data['remove_or_keep_for_multiple_uniqueids_in_ob_issue'] == 'remove')]
+else:
+    meo_appended_data = pd.DataFrame()
+
 
 days = meo_df['ViewData.Task Business Date'].value_counts().reset_index()
-date = list(days[days['ViewData.Task Business Date']>50]['index'])[0]
+#                    date_gt_50 = list(days[days['ViewData.Task Business Date']>50]['index'])[0]
+date_with_highest_frq = days.sort_values(by="ViewData.Task Business Date", ascending = False)['index'].iloc[0]
+#                    date_from_to_extract_dmy = pd.to_datetime(date_gt_50)
+date_from_to_extract_dmy = pd.to_datetime(date_with_highest_frq)
+day = date_from_to_extract_dmy.day
+mon = date_from_to_extract_dmy.month
+yr = date_from_to_extract_dmy.year
 
+Schonfeld_897_position_file_path = "\\\\vitblrdevcons01\\Raman  Strategy ML 2.0\\Files and Rules for Lookup\\Rules delivery from Ronson\\Schonfeld\\Schonfeld ML final\\57 Position Recon\\"
+filename = '57 Position recon - '+ dmy_value_with_or_without_zero(param_dmy_value = mon) + dmy_value_with_or_without_zero(param_dmy_value = day) + str(yr)+ '.xlsx'
+filename_pos_file = Schonfeld_897_position_file_path + filename
 
-date1 = pd.to_datetime(date)
-
-day = date1.day
-mon = date1.month
-yr = date1.year
-
-#path = 'Schonfield\daily files\\'
-path = '\\\\vitblrdevcons01\\Raman  Strategy ML 2.0\\Files and Rules for Lookup\\Rules delivery from Ronson\\Schonfeld\\Schonfeld ML final\\57 Position Recon\\'
-if((day > 0) & (day < 10)):
-    filename = '57 Position recon - '+ str(mon) + '0' + str(day) + str(yr)+'_copy.xlsx'
-else:
-    filename = '57 Position recon - '+ str(mon) + str(day) + str(yr)+'_copy.xlsx'
-filename_pos_file = path + filename
-
-def read_pos_file_and_concat_to_single_pos_df(fun_filepath):
-    xlsx_obj = pd.ExcelFile(fun_filepath)
-    xlsx_sheet_names_list = xlsx_obj.sheet_names
-    True_False_list_for_Document_Map_substring_in_xlsx_sheet_names_list = ['Document Map' in x for x in xlsx_sheet_names_list]
-    Document_Map_substring_in_xlsx_sheet_names_list = [x for x,y in zip(xlsx_sheet_names_list,True_False_list_for_Document_Map_substring_in_xlsx_sheet_names_list) if y == True]
-    string_name_for_Document_Map_substring_in_xlsx_sheet_names_list = Document_Map_substring_in_xlsx_sheet_names_list[0]
-    
-    xlsx_sheet_names_list_without_Document_Map = [x for x in xlsx_sheet_names_list if x != string_name_for_Document_Map_substring_in_xlsx_sheet_names_list]
-    df_sheet_list = []
-    for sheet_name in xlsx_sheet_names_list_without_Document_Map:
-        df_sheet = xlsx_obj.parse(sheet_name,skiprows = 3)
-        df_sheet_list.append(df_sheet)
-    pos_df = pd.concat(df_sheet_list)
-    return(pos_df)
-
-
-    
-def read_passowrd_protected_pos_file_and_concat_to_single_pos_df(param_filepath, param_passwrod, param_sheet_names_list, param_start_row_num, param_start_col_num):
+def read_passowrd_protected_pos_file_and_concat_to_single_pos_df(param_filepath, param_passwrod, param_sheet_names_list, param_start_row_num, param_start_col_num, param_pos_cols_list):
     xl_app = win32com.client.Dispatch('Excel.Application')
     #pwd = getpass.getpass('Enter file password: ')
     xl_wb = xl_app.Workbooks.Open(param_filepath, False, True, None, param_passwrod)
     xl_app.Visible = False
     df_sheet_list = []
     for sheet_name in param_sheet_names_list:
+        print(sheet_name)
         xl_sh = xl_wb.Worksheets(sheet_name)
 
     # Get last row    
@@ -183,14 +298,17 @@ def read_passowrd_protected_pos_file_and_concat_to_single_pos_df(param_filepath,
     
         content = xl_sh.Range(xl_sh.Cells(param_start_row_num, param_start_col_num), xl_sh.Cells(last_row, last_col)).Value
         df_sheet = pd.DataFrame(list(content[1:]), columns=content[0])
+        df_sheet = df_sheet[param_pos_cols_list]
         df_sheet_list.append(df_sheet)
     pos_df = pd.concat(df_sheet_list)
     return(pos_df)
 
-    
-
-pos = read_pos_file_and_concat_to_single_pos_df(fun_filepath = filename_pos_file)
-
+pos = read_passowrd_protected_pos_file_and_concat_to_single_pos_df(param_filepath = filename_pos_file, 
+                                                                   param_passwrod = Schonfeld_897_position_file_password, 
+                                                                   param_sheet_names_list = [Schonfeld_897_position_file_first_sheet_name, Schonfeld_897_position_file_second_sheet_name], 
+                                                                   param_start_row_num = Schonfeld_897_position_file_first_sheet_origin_row_number, 
+                                                                   param_start_col_num = Schonfeld_897_position_file_first_sheet_origin_col_number,
+																   param_pos_cols_list = Schonfeld_897_position_file_columns_list)
 
 os.chdir('\\\\vitblrdevcons01\\Raman  Strategy ML 2.0\\All_Data\\' + str(client) + '\\output_files')
 #uni2 = pd.read_csv('Lombard/249/ReconDB.HST_RecData_249_01_10.csv')
